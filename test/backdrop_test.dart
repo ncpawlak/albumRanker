@@ -7,6 +7,7 @@ import 'package:albumrank/main.dart';
 import 'package:albumrank/services/album_lookup_service.dart';
 import 'package:albumrank/services/artist_image_service.dart';
 import 'package:albumrank/ui/group_detail_screen.dart';
+import 'package:albumrank/ui/widgets/backdrop.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
@@ -92,6 +93,21 @@ void main() {
       expect(s.imageFor('korn'), isNull);
       expect(s.isKnown('korn'), isTrue);
     });
+  });
+
+  test('cover collage uses every cover without stacking repeats', () {
+    for (var count = 1; count <= 12; count++) {
+      final used = <int>{};
+      for (var r = 0; r < 4; r++) {
+        for (var c = 0; c < 4; c++) {
+          final i = CoverCollage.coverIndex(r, c, 4, count);
+          used.add(i);
+          if (count > 1 && r > 0) expect(i, isNot(CoverCollage.coverIndex(r - 1, c, 4, count)), reason: '$count covers');
+          if (count > 1 && c > 0) expect(i, isNot(CoverCollage.coverIndex(r, c - 1, 4, count)), reason: '$count covers');
+        }
+      }
+      expect(used.length, count, reason: 'all $count covers appear');
+    }
   });
 
   group('UI', () {

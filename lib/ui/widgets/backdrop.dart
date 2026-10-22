@@ -138,6 +138,11 @@ class CoverCollage extends StatelessWidget {
     return [for (final a in withArt.take(12)) a.artworkUrl!.replaceFirst('600x600bb', '300x300bb')];
   }
 
+  /// Which cover goes in row [r], column [c]: cycles through every cover, and
+  /// shifts each row when the covers would otherwise stack in identical columns.
+  static int coverIndex(int r, int c, int cols, int count) =>
+      (r * cols + c + (cols % count == 0 ? r : 0)) % count;
+
   @override
   Widget build(BuildContext context) {
     final covers = coversFor(albums);
@@ -145,10 +150,9 @@ class CoverCollage extends StatelessWidget {
     return LayoutBuilder(builder: (context, c) {
       // Oversize and rotate the grid so its edges never show.
       final w = c.maxWidth * 1.5, h = c.maxHeight * 1.5;
-      const cols = 3;
+      const cols = 4;
       final tile = w / cols;
       final rows = (h / tile).ceil();
-      var i = 0;
       return ClipRect(
         child: OverflowBox(
           maxWidth: w,
@@ -164,7 +168,7 @@ class CoverCollage extends StatelessWidget {
                         SizedBox(
                           width: tile,
                           height: tile,
-                          child: FadingNetworkImage(covers[(i++ + r) % covers.length]),
+                          child: FadingNetworkImage(covers[coverIndex(r, col, cols, covers.length)]),
                         ),
                     ],
                   ),
