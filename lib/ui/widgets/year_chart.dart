@@ -4,12 +4,13 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 
 import '../../logic/year_chart.dart';
+import '../../models/album.dart';
 import '../../theme/rating_colors.dart';
 
 /// Ratings-by-year chart: a dot per album (stacked dots grow and show a count),
 /// a solid line through each year's whole-number average and, when [showQuality]
 /// is on, a dashed line through each year's quality score. Empty years keep
-/// their slot on the timeline and break both lines.
+/// their slot on the timeline; both lines bridge across them.
 class YearRatingChart extends StatefulWidget {
   const YearRatingChart({
     super.key,
@@ -17,12 +18,17 @@ class YearRatingChart extends StatefulWidget {
     required this.condensed,
     required this.showQuality,
     this.onYearTap,
+    this.onAlbumTap,
   });
 
   final List<YearPoint> years;
   final bool condensed;
   final bool showQuality;
   final ValueChanged<int>? onYearTap;
+
+  /// When set, tapping a dot opens its album (a picker if several share it)
+  /// instead of calling [onYearTap].
+  final ValueChanged<Album>? onAlbumTap;
 
   static const scrollSlotWidth = 44.0;
   static const chartHeight = 230.0;
@@ -59,6 +65,51 @@ class _YearRatingChartState extends State<YearRatingChart> {
     super.dispose();
   }
 
+  /// Opens the album whose dot row is nearest the tap; several albums sharing
+  /// that dot get a picker sheet.
+  Future<void> _openAlbumAt(YearPoint point, double dy) async {
+    int? nearest;
+    var best = double.infinity;
+    for (final r in point.stacks.keys) {
+      final dist = (dy - _Geometry.y(r)).abs();
+      if (dist < best) {
+        best = dist;
+        nearest = r;
+      }
+    }
+    if (nearest == null || best > _Geometry.step * 0.75) return;
+    final albums = [for (final a in point.albums) if (a.rating == nearest) a]
+      ..sort((a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()));
+    final open = widget.onAlbumTap!;
+    if (albums.length == 1) {
+      open(albums.single);
+      return;
+    }
+    final picked = await showModalBottomSheet<Album>(
+      context: context,
+      showDragHandle: true,
+      builder: (context) => SafeArea(
+        child: ListView(
+          shrinkWrap: true,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+              child: Text('${point.year} · $nearest stars', style: Theme.of(context).textTheme.titleMedium),
+            ),
+            for (final a in albums)
+              ListTile(
+                title: Text(a.title),
+                subtitle: Text(a.artist),
+                trailing: const Icon(Icons.chevron_right_rounded),
+                onTap: () => Navigator.of(context).pop(a),
+              ),
+          ],
+        ),
+      ),
+    );
+    if (picked != null) open(picked);
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -86,7 +137,11 @@ class _YearRatingChartState extends State<YearRatingChart> {
               onTapUp: (d) {
                 final i = (d.localPosition.dx / slot).floor();
                 if (i < 0 || i >= n || widget.years[i].isEmpty) return;
-                widget.onYearTap?.call(widget.years[i].year);
+                if (widget.onAlbumTap != null) {
+                  _openAlbumAt(widget.years[i], d.localPosition.dy);
+                } else {
+                  widget.onYearTap?.call(widget.years[i].year);
+                }
               },
               child: CustomPaint(size: Size(slot * n, height), painter: painter),
             );
@@ -111,7 +166,6 @@ class _ChartColors {
     required this.average,
     required this.quality,
     required this.dotEdge,
-    required this.emptyBand,
   });
 
   factory _ChartColors.of(ThemeData theme) {
@@ -123,11 +177,10 @@ class _ChartColors {
       average: cs.onSurface,
       quality: cs.primary,
       dotEdge: cs.surfaceContainer,
-      emptyBand: cs.onSurface.withValues(alpha: 0.03),
     );
   }
 
-  final Color grid, label, mutedLabel, average, quality, dotEdge, emptyBand;
+  final Color grid, label, mutedLabel, average, quality, dotEdge;
 }
 
 /// Shared vertical layout so the fixed y-axis lines up with the scrolling plot.
@@ -206,11 +259,6 @@ class _ChartPainter extends CustomPainter {
       final y = _Geometry.y(r);
       canvas.drawLine(Offset(0, y), Offset(size.width, y), grid..strokeWidth = r.isEven ? 1 : 0.5);
     }
-    final band = Paint()..color = colors.emptyBand;
-    for (var i = 0; i < years.length; i++) {
-      if (!years[i].isEmpty) continue;
-      canvas.drawRect(Rect.fromLTRB(slot * i, _Geometry.top - 6, slot * (i + 1), _Geometry.bottom + 6), band);
-    }
   }
 
   void _paintDots(Canvas canvas) {
@@ -234,16 +282,13 @@ class _ChartPainter extends CustomPainter {
     }
   }
 
-  /// Connects consecutive years that have values; a null (empty year) breaks the line.
+  /// Connects every year that has a value; empty years (null) are bridged.
   void _paintLine(Canvas canvas, List<double?> values, Paint paint, {required bool dashed}) {
     final path = Path();
     var drawing = false;
     for (var i = 0; i < values.length; i++) {
       final v = values[i];
-      if (v == null) {
-        drawing = false;
-        continue;
-      }
+      if (v == null) continue;
       final p = Offset(_x(i), _Geometry.y(v));
       drawing ? path.lineTo(p.dx, p.dy) : path.moveTo(p.dx, p.dy);
       drawing = true;
@@ -266,7 +311,7 @@ class _ChartPainter extends CustomPainter {
     final labelY = _Geometry.bottom + 6 + _Geometry.labelBand / 2;
     final width = slot * years.length;
     final indexes = condensed
-        ? condensedLabelIndexes([for (final y in years) y.year], 34 / slot)
+        ? condensedLabelIndexes([for (final y in years) y.year], 42 / slot)
         : List.generate(years.length, (i) => i);
     for (final i in indexes) {
       // Keep the first and last labels inside the chart edges.

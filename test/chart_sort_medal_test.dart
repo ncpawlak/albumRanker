@@ -138,6 +138,44 @@ void main() {
       expect(ordered(['Amnesiac', 'Kid A', 'OK Computer']), isTrue);
     });
 
+    testWidgets('artist detail has a chart; tapping a dot opens the album', (tester) async {
+      await pumpApp(tester);
+      await tester.tap(find.text('Rankings'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Radiohead'));
+      await tester.pumpAndSettle();
+      final chart = find.byKey(const ValueKey('year-chart'));
+      expect(chart, findsOneWidget);
+      // Radiohead spans 1997–2001; fit it and tap the 1997 slot at rating 10.
+      await tester.tap(find.byKey(const ValueKey('chart-fit')));
+      await tester.pumpAndSettle();
+      final box = tester.getRect(chart);
+      final slot = box.width / 5;
+      final y10 = box.top + 12; // top grid line is rating 10
+      await tester.tapAt(Offset(box.left + slot / 2, y10));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('save-album')), findsOneWidget);
+      expect(find.widgetWithText(TextField, 'OK Computer'), findsOneWidget);
+    });
+
+    testWidgets('single-album and year groups have no chart', (tester) async {
+      await pumpApp(tester);
+      await tester.tap(find.text('Rankings'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Frank Ocean'));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('year-chart')), findsNothing);
+      await tester.pageBack();
+      await tester.pumpAndSettle();
+      await tester.tap(find.descendant(
+          of: find.byWidgetPredicate((w) => w is SegmentedButton), matching: find.text('Year')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('1997'));
+      await tester.pumpAndSettle();
+      expect(find.text('Rank #1 by year'), findsOneWidget);
+      expect(find.byKey(const ValueKey('year-chart')), findsNothing);
+    });
+
     testWidgets('stats chart toggles fit and opens a year on tap', (tester) async {
       await pumpApp(tester);
       await tester.tap(find.text('Stats'));
@@ -152,6 +190,30 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('OK Computer'), findsOneWidget);
       expect(find.text('Rank #1 by year'), findsOneWidget);
+    });
+
+    testWidgets('stats chart opens the tapped year in fit and scroll modes', (tester) async {
+      await pumpApp(tester);
+      await tester.tap(find.text('Stats'));
+      await tester.pumpAndSettle();
+      final chart = find.byKey(const ValueKey('year-chart'));
+
+      // Scroll mode opens at the latest years; the right edge is 2016.
+      var box = tester.getRect(find.ancestor(of: chart, matching: find.byType(SingleChildScrollView)));
+      await tester.tapAt(Offset(box.right - 10, box.center.dy));
+      await tester.pumpAndSettle();
+      expect(find.text('Blonde'), findsOneWidget);
+      await tester.pageBack();
+      await tester.pumpAndSettle();
+
+      // Fit mode: 1997..2016 is 20 slots; 2001 is slot 4.
+      await tester.tap(find.byKey(const ValueKey('chart-fit')));
+      await tester.pumpAndSettle();
+      box = tester.getRect(chart);
+      await tester.tapAt(Offset(box.left + box.width / 20 * 4.5, box.center.dy));
+      await tester.pumpAndSettle();
+      expect(find.text('Amnesiac'), findsOneWidget);
+      expect(find.text('Kid A'), findsNothing);
     });
   });
 }

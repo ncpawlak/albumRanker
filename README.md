@@ -8,8 +8,9 @@ Android app (Flutter) for rating albums 1–10 and ranking years, decades, genre
 - Auto-fill from the iTunes Search API while typing; works offline with manual entry.
 - Rankings by Year, Decade, Genre, Artist (whole-number averages, shared ranks for ties) plus an all-albums leaderboard. Ranks 1–3 get gold, silver and bronze crowns (ties share a crown).
 - Group details sort by rating, A–Z or year (newest first); the last choice is remembered.
+- Decade, genre and artist details (with 2+ albums) show a ratings-by-year graph of just that group; tap a dot to open the album.
 - Optional **quality coefficient**: rewards groups with more good albums using `(sum + 5·2) / (n + 2)`.
-- Stats tab: ratings-by-year chart (a dot per album, an average line, and a dashed quality line when the coefficient is on; empty years break the line; scrolls sideways or fits to screen; tap a year to open it), rating spread, and most-rated artists, years and genres.
+- Stats tab: ratings-by-year chart (a dot per album, an average line, and a dashed quality line when the coefficient is on; the line bridges empty years; scrolls sideways or fits to screen; tap a year to open it), rating spread, and most-rated artists, years and genres.
 - Ratings color-coded red (1) → blue (10).
 - JSON export/import, plus a weekly automatic backup to `Downloads/AlbumRank` on Android (keeps the newest 5).
 
