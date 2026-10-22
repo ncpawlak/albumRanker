@@ -10,7 +10,7 @@ import '../../theme/rating_colors.dart';
 /// Ratings-by-year chart: a dot per album (stacked dots grow and show a count),
 /// a solid line through each year's whole-number average and, when [showQuality]
 /// is on, a dashed line through each year's quality score. Empty years keep
-/// their slot on the timeline and break both lines.
+/// their slot on the timeline; both lines bridge across them.
 class YearRatingChart extends StatefulWidget {
   const YearRatingChart({
     super.key,
@@ -166,7 +166,6 @@ class _ChartColors {
     required this.average,
     required this.quality,
     required this.dotEdge,
-    required this.emptyBand,
   });
 
   factory _ChartColors.of(ThemeData theme) {
@@ -178,11 +177,10 @@ class _ChartColors {
       average: cs.onSurface,
       quality: cs.primary,
       dotEdge: cs.surfaceContainer,
-      emptyBand: cs.onSurface.withValues(alpha: 0.03),
     );
   }
 
-  final Color grid, label, mutedLabel, average, quality, dotEdge, emptyBand;
+  final Color grid, label, mutedLabel, average, quality, dotEdge;
 }
 
 /// Shared vertical layout so the fixed y-axis lines up with the scrolling plot.
@@ -261,11 +259,6 @@ class _ChartPainter extends CustomPainter {
       final y = _Geometry.y(r);
       canvas.drawLine(Offset(0, y), Offset(size.width, y), grid..strokeWidth = r.isEven ? 1 : 0.5);
     }
-    final band = Paint()..color = colors.emptyBand;
-    for (var i = 0; i < years.length; i++) {
-      if (!years[i].isEmpty) continue;
-      canvas.drawRect(Rect.fromLTRB(slot * i, _Geometry.top - 6, slot * (i + 1), _Geometry.bottom + 6), band);
-    }
   }
 
   void _paintDots(Canvas canvas) {
@@ -289,16 +282,13 @@ class _ChartPainter extends CustomPainter {
     }
   }
 
-  /// Connects consecutive years that have values; a null (empty year) breaks the line.
+  /// Connects every year that has a value; empty years (null) are bridged.
   void _paintLine(Canvas canvas, List<double?> values, Paint paint, {required bool dashed}) {
     final path = Path();
     var drawing = false;
     for (var i = 0; i < values.length; i++) {
       final v = values[i];
-      if (v == null) {
-        drawing = false;
-        continue;
-      }
+      if (v == null) continue;
       final p = Offset(_x(i), _Geometry.y(v));
       drawing ? path.lineTo(p.dx, p.dy) : path.moveTo(p.dx, p.dy);
       drawing = true;
