@@ -25,7 +25,9 @@ class ArtistImageService extends ChangeNotifier {
     }
   }
 
-  static const _key = 'albumrank.artistImages';
+  // v2: matching now folds stylized letters and prefers popular artists, so
+  // earlier automatic picks (e.g. the wrong "Korn") are looked up again.
+  static const _key = 'albumrank.artistImages.v2';
 
   final SharedPreferences _prefs;
   final http.Client _client;
@@ -35,7 +37,32 @@ class ArtistImageService extends ChangeNotifier {
   final _pending = <String, Future<String?>>{};
 
   static String _norm(String s) => s.trim().toLowerCase().replaceAll(RegExp(r'\s+'), ' ');
-  static String _loose(String s) => s.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
+  // Stylized and accented letters bands use in their names (KoЯn, Mötley Crüe, Sigur Rós…).
+  static const _fold = {
+    'я': 'r', 'и': 'n', 'ø': 'o', 'ö': 'o', 'ó': 'o', 'ò': 'o', 'ô': 'o', 'õ': 'o',
+    'ü': 'u', 'ú': 'u', 'ù': 'u', 'û': 'u', 'é': 'e', 'è': 'e', 'ê': 'e', 'ë': 'e',
+    'á': 'a', 'à': 'a', 'â': 'a', 'ä': 'a', 'å': 'a', 'ã': 'a', 'æ': 'ae', 'í': 'i',
+    'ì': 'i', 'î': 'i', 'ï': 'i', 'ñ': 'n', 'ç': 'c', 'ß': 'ss', 'ÿ': 'y', '\$': 's', '&': 'and',
+  };
+
+  static String _loose(String s) {
+    final out = StringBuffer();
+    for (final ch in s.toLowerCase().split('')) {
+      out.write(_fold[ch] ?? ch);
+    }
+    return out.toString().replaceAll(RegExp(r'[^a-z0-9]'), '');
+  }
+
+  /// The best result for [artist]: same name (ignoring case, punctuation and
+  /// stylized letters), and the most popular when several share it.
+  static ArtistImageOption? bestMatch(String artist, List<ArtistImageOption> results) {
+    final want = _loose(artist);
+    ArtistImageOption? best;
+    for (final r in results) {
+      if (_loose(r.name) == want && (best == null || r.fans > best.fans)) best = r;
+    }
+    return best;
+  }
 
   bool isKnown(String artist) => _cache.containsKey(_norm(artist));
 
@@ -53,9 +80,7 @@ class ArtistImageService extends ChangeNotifier {
     if (_cache.containsKey(key)) return Future.value(imageFor(artist));
     return _pending[key] ??= () async {
       try {
-        final results = await search(artist, limit: 5);
-        final want = _loose(artist);
-        final match = results.where((r) => _loose(r.name) == want).firstOrNull;
+        final match = bestMatch(artist, await search(artist, limit: 10));
         await _store(key, match?.imageUrl ?? '');
         return match?.imageUrl;
       } catch (_) {

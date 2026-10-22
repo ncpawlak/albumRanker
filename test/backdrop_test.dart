@@ -26,7 +26,7 @@ MockClient _deezer(Map<String, List<Map<String, Object>>> byQuery, {List<String>
       final q = req.url.queryParameters['q'] ?? '';
       log?.add(q);
       if (fail) throw http.ClientException('offline');
-      return http.Response(jsonEncode({'data': byQuery[q] ?? const []}), 200);
+      return http.Response.bytes(utf8.encode(jsonEncode({'data': byQuery[q] ?? const []})), 200);
     });
 
 void main() {
@@ -66,6 +66,21 @@ void main() {
       final s = ArtistImageService(prefs, client: _deezer({}, fail: true));
       expect(await s.resolve('Korn'), isNull);
       expect(s.isKnown('Korn'), isFalse);
+    });
+
+    test('picks the most popular match and folds stylized letters (KoЯn)', () async {
+      final prefs = await SharedPreferences.getInstance();
+      final s = ArtistImageService(prefs,
+          client: _deezer({
+            'Korn': [
+              _artist('Korn', _other, fans: 84),
+              _artist('KoЯn', _photo, fans: 2629052),
+              _artist('Jorn', _other, fans: 12852),
+            ],
+            'Motley Crue': [_artist('Mötley Crüe', _photo)],
+          }));
+      expect(await s.resolve('Korn'), _photo);
+      expect(await s.resolve('Motley Crue'), _photo);
     });
 
     test('setImage overrides and clears', () async {
@@ -155,6 +170,30 @@ void main() {
 
       final service = ArtistImageService(await SharedPreferences.getInstance());
       expect(service.imageFor('Polaris'), _other);
+    });
+
+    testWidgets('settings lists artists and re-searches a photo', (tester) async {
+      await pumpApp(
+          tester,
+          _deezer({
+            'Sleep Token': [_artist('Sleep Token', _photo)],
+            'Sleep Token band': [_artist('Sleep Token', _other, fans: 900000)],
+          }));
+      await tester.tap(find.text('Settings').last);
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('artist-backgrounds')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('artist-image-Polaris')), findsOneWidget);
+      await tester.tap(find.byKey(const ValueKey('artist-image-Sleep Token')));
+      await tester.pumpAndSettle();
+      expect(find.text('Background for Sleep Token'), findsOneWidget);
+
+      await tester.enterText(find.byKey(const ValueKey('image-search-field')), 'Sleep Token band');
+      await tester.pumpAndSettle(const Duration(milliseconds: 500));
+      await tester.tap(find.byKey(const ValueKey('image-option-0')));
+      await tester.pumpAndSettle();
+      expect(ArtistImageService(await SharedPreferences.getInstance()).imageFor('Sleep Token'), _other);
+      expect(find.text('Photo set'), findsWidgets);
     });
 
     testWidgets('face-off shows both artists split diagonally', (tester) async {

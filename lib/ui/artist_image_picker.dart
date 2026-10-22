@@ -49,7 +49,8 @@ class _ArtistImagePickerState extends State<_ArtistImagePicker> {
       _error = null;
     });
     try {
-      final results = await AppScope.of(context).artistImages!.search(_query.text);
+      final results = (await AppScope.of(context).artistImages!.search(_query.text))
+        ..sort((a, b) => b.fans.compareTo(a.fans));
       if (mounted && id == _searchId) setState(() => _results = results);
     } catch (_) {
       if (mounted && id == _searchId) setState(() => _error = 'Couldn\'t search right now. Check your connection.');

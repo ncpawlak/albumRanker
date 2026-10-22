@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import '../app_scope.dart';
 import '../services/auto_backup_service.dart';
 import '../theme/rating_colors.dart';
+import 'artist_images_screen.dart';
 import 'duplicate_names_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
@@ -109,6 +110,16 @@ class SettingsScreen extends StatelessWidget {
                   onChanged: scope.settings.setBackgrounds,
                 ),
               ),
+              if (scope.artistImages != null)
+                ListTile(
+                  key: const ValueKey('artist-backgrounds'),
+                  leading: const Icon(Icons.image_search_rounded),
+                  title: const Text('Artist backgrounds'),
+                  subtitle: const Text('Re-search any band\'s photo if it\'s the wrong one'),
+                  trailing: const Icon(Icons.chevron_right_rounded),
+                  onTap: () => Navigator.of(context)
+                      .push(MaterialPageRoute(builder: (_) => const ArtistImagesScreen())),
+                ),
             ],
           ),
           const SizedBox(height: 20),
