@@ -5,6 +5,7 @@ import 'app_scope.dart';
 import 'data/album_repository.dart';
 import 'data/settings_controller.dart';
 import 'services/album_lookup_service.dart';
+import 'services/artist_image_service.dart';
 import 'services/auto_backup_service.dart';
 import 'theme/app_theme.dart';
 import 'ui/home_shell.dart';
@@ -19,17 +20,19 @@ Future<void> main() async {
     settings: SettingsController(prefs),
     lookup: AlbumLookupService(),
     backup: backup,
+    artistImages: ArtistImageService(prefs),
   ));
   backup.runIfDue();
 }
 
 class AlbumRankerApp extends StatelessWidget {
-  const AlbumRankerApp({super.key, required this.repository, required this.settings, required this.lookup, this.backup});
+  const AlbumRankerApp({super.key, required this.repository, required this.settings, required this.lookup, this.backup, this.artistImages});
 
   final AlbumRepository repository;
   final SettingsController settings;
   final AlbumLookupService lookup;
   final AutoBackupService? backup;
+  final ArtistImageService? artistImages;
 
   @override
   Widget build(BuildContext context) {
@@ -38,6 +41,7 @@ class AlbumRankerApp extends StatelessWidget {
       settings: settings,
       lookup: lookup,
       backup: backup,
+      artistImages: artistImages,
       child: ListenableBuilder(
         listenable: settings,
         builder: (context, _) => MaterialApp(

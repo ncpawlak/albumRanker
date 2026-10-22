@@ -4,8 +4,10 @@ import '../app_scope.dart';
 import '../logic/ranking.dart';
 import '../logic/year_chart.dart';
 import 'album_edit_screen.dart';
+import 'artist_image_picker.dart';
 import 'share_card_screen.dart';
 import 'widgets/album_tile.dart';
+import 'widgets/backdrop.dart';
 import 'widgets/rating_widgets.dart';
 import 'widgets/year_chart_card.dart';
 
@@ -40,11 +42,34 @@ class GroupDetailScreen extends StatelessWidget {
         for (final g in rankGroups(repo.albums, groupBy, useQuality: quality)) {
           if (g.key == groupKey) group = g;
         }
-        return Scaffold(
+        final images = scope.artistImages;
+        Widget? backdrop;
+        if (group != null && scope.settings.backgrounds) {
+          final collage = CoverCollage.coversFor(group.albums).isEmpty ? null : CoverCollage(albums: group.albums);
+          backdrop = groupBy == GroupBy.artist && images != null
+              ? ArtistPhoto(artist: group.label, fallback: collage)
+              : collage;
+        }
+        final surface = theme.colorScheme.surface;
+        return Backdrop(
+          image: backdrop == null ? null : KeyedSubtree(key: const ValueKey('group-backdrop'), child: backdrop),
+          child: Scaffold(
+          backgroundColor: backdrop == null ? null : Colors.transparent,
           appBar: AppBar(
+            backgroundColor: backdrop == null
+                ? null
+                : WidgetStateColor.resolveWith((s) =>
+                    s.contains(WidgetState.scrolledUnder) ? surface.withValues(alpha: 0.88) : Colors.transparent),
             title: Text(group?.label ?? groupBy.label),
             titleTextStyle: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
             actions: [
+              if (group != null && groupBy == GroupBy.artist && images != null && scope.settings.backgrounds)
+                IconButton(
+                  key: const ValueKey('change-image'),
+                  tooltip: 'Change background image',
+                  icon: const Icon(Icons.image_search_rounded),
+                  onPressed: () => showArtistImagePicker(context, group!.label),
+                ),
               if (group != null)
                 IconButton(
                   key: const ValueKey('share-group'),
@@ -102,6 +127,7 @@ class GroupDetailScreen extends StatelessWidget {
                         child: YearChartCard(
                           years: yearTimeline(group.albums),
                           settings: scope.settings,
+                          translucent: backdrop != null,
                           onAlbumTap: (album) => Navigator.of(context).push(
                             MaterialPageRoute(builder: (_) => AlbumEditScreen(album: album)),
                           ),
@@ -124,6 +150,7 @@ class GroupDetailScreen extends StatelessWidget {
                       ),
                   ],
                 ),
+          ),
         );
       },
     );

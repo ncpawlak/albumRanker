@@ -7,6 +7,7 @@ import '../app_scope.dart';
 import '../logic/faceoff.dart';
 import '../models/album.dart';
 import '../theme/rating_colors.dart';
+import 'widgets/backdrop.dart';
 import 'widgets/rating_widgets.dart';
 
 enum _Phase { entering, choosing, prompting, decided, finished }
@@ -182,7 +183,10 @@ class _FaceOffArenaState extends State<FaceOffArena> with TickerProviderStateMix
             stops: [0, 0.6, 1],
           ),
         ),
-        child: SafeArea(
+        child: Stack(
+          children: [
+            Positioned.fill(child: _splitBackdrop(context)),
+            SafeArea(
           child: ListenableBuilder(
             listenable: repo,
             builder: (context, _) => AnimatedSwitcher(
@@ -199,6 +203,80 @@ class _FaceOffArenaState extends State<FaceOffArena> with TickerProviderStateMix
             ),
           ),
         ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Both artists' photos, faint, split by a 45° glowing seam through the arena.
+  Widget _splitBackdrop(BuildContext context) {
+    final scope = AppScope.of(context);
+    final left = _left, right = _right;
+    if (!scope.settings.backgrounds || scope.artistImages == null || left == null || right == null ||
+        _phase == _Phase.finished) {
+      return const SizedBox.shrink();
+    }
+    Widget photo(Album a) => ArtistPhoto(
+          artist: a.artist,
+          fallback: a.artworkUrl == null ? null : FadingNetworkImage(a.artworkUrl!),
+        );
+    return IgnorePointer(
+      child: AnimatedBuilder(
+        animation: Listenable.merge([_enter, _pick, _exit]),
+        builder: (context, _) {
+          final t = _enter.value, p = _pick.value;
+          final e = Curves.easeIn.transform(_exit.value);
+          final appear = Curves.easeOutCubic.transform(((t - _impactAt + 0.04) / 0.36).clamp(0.0, 1.0));
+          final flash = t >= _impactAt ? (1 - (t - _impactAt) / 0.3).clamp(0.0, 1.0) : 0.0;
+          final decided = (_phase == _Phase.prompting || _phase == _Phase.decided) && _winnerId != null;
+          double opacity(Album a) {
+            const base = 0.24;
+            final o = !decided
+                ? base
+                : a.id == _winnerId
+                    ? base + 0.18 * p
+                    : base * (1 - 0.7 * p);
+            return (o * appear * (1 - e)).clamp(0.0, 1.0);
+          }
+
+          return LayoutBuilder(builder: (context, c) {
+            final h = c.maxHeight;
+            Widget half(Album a, bool isLeft) => Positioned.fill(
+                  child: ClipPath(
+                    key: ValueKey('split-${isLeft ? 'left' : 'right'}'),
+                    clipper: _DiagonalClipper(isLeft),
+                    child: Transform.translate(
+                      offset: Offset((isLeft ? -1 : 1) * 80 * (1 - appear), 0),
+                      child: Opacity(
+                        opacity: opacity(a),
+                        child: Stack(
+                          children: [
+                            Positioned(
+                              left: 0,
+                              right: 0,
+                              top: isLeft ? 0 : null,
+                              bottom: isLeft ? null : 0,
+                              height: h * 0.62,
+                              child: photo(_live(a)),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+            return Stack(
+              children: [
+                half(left, true),
+                half(right, false),
+                Positioned.fill(
+                  child: CustomPaint(painter: _SeamPainter(opacity: appear * (1 - e), flash: flash)),
+                ),
+              ],
+            );
+          });
+        },
       ),
     );
   }
@@ -733,4 +811,69 @@ class _RecapRow extends StatelessWidget {
       ),
     );
   }
+}
+
+/// The 45° line the split backdrop is cut along: from top-right to bottom-left, through the fighters.
+Offset _seamTop(Size s) => Offset(s.width / 2 + s.height * _seamY, 0);
+Offset _seamBottom(Size s) => Offset(s.width / 2 - s.height * (1 - _seamY), s.height);
+const _seamY = 0.42;
+
+class _DiagonalClipper extends CustomClipper<Path> {
+  const _DiagonalClipper(this.left);
+
+  final bool left;
+
+  @override
+  Path getClip(Size size) {
+    final top = _seamTop(size), bottom = _seamBottom(size);
+    final far = size.width + size.height;
+    return left
+        ? (Path()
+          ..moveTo(-far, 0)
+          ..lineTo(top.dx, 0)
+          ..lineTo(bottom.dx, size.height)
+          ..lineTo(-far, size.height)
+          ..close())
+        : (Path()
+          ..moveTo(top.dx, 0)
+          ..lineTo(far, 0)
+          ..lineTo(far, size.height)
+          ..lineTo(bottom.dx, size.height)
+          ..close());
+  }
+
+  @override
+  bool shouldReclip(_DiagonalClipper old) => old.left != left;
+}
+
+class _SeamPainter extends CustomPainter {
+  const _SeamPainter({required this.opacity, required this.flash});
+
+  final double opacity;
+  final double flash;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (opacity <= 0) return;
+    final a = _seamTop(size), b = _seamBottom(size);
+    final glow = (0.35 + 0.65 * flash) * opacity;
+    canvas.drawLine(
+      a,
+      b,
+      Paint()
+        ..color = const Color(0xFF8A5BFF).withValues(alpha: glow)
+        ..strokeWidth = 10 + 14 * flash
+        ..maskFilter = MaskFilter.blur(BlurStyle.normal, 8 + 10 * flash),
+    );
+    canvas.drawLine(
+      a,
+      b,
+      Paint()
+        ..color = Colors.white.withValues(alpha: (0.25 + 0.75 * flash) * opacity)
+        ..strokeWidth = 1.2 + 1.5 * flash,
+    );
+  }
+
+  @override
+  bool shouldRepaint(_SeamPainter old) => old.opacity != opacity || old.flash != flash;
 }

@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import '../app_scope.dart';
 import '../services/auto_backup_service.dart';
 import '../theme/rating_colors.dart';
+import 'artist_images_screen.dart';
 import 'duplicate_names_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
@@ -98,6 +99,27 @@ class SettingsScreen extends StatelessWidget {
                   ),
                 ),
               ),
+              ListenableBuilder(
+                listenable: scope.settings,
+                builder: (context, _) => SwitchListTile(
+                  key: const ValueKey('backgrounds-switch'),
+                  secondary: const Icon(Icons.wallpaper_rounded),
+                  title: const Text('Background images'),
+                  subtitle: const Text('Faint band photos and cover collages behind groups and face-offs'),
+                  value: scope.settings.backgrounds,
+                  onChanged: scope.settings.setBackgrounds,
+                ),
+              ),
+              if (scope.artistImages != null)
+                ListTile(
+                  key: const ValueKey('artist-backgrounds'),
+                  leading: const Icon(Icons.image_search_rounded),
+                  title: const Text('Artist backgrounds'),
+                  subtitle: const Text('Re-search any band\'s photo if it\'s the wrong one'),
+                  trailing: const Icon(Icons.chevron_right_rounded),
+                  onTap: () => Navigator.of(context)
+                      .push(MaterialPageRoute(builder: (_) => const ArtistImagesScreen())),
+                ),
             ],
           ),
           const SizedBox(height: 20),

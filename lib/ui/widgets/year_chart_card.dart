@@ -17,6 +17,7 @@ class YearChartCard extends StatelessWidget {
     this.showQuality = false,
     this.onYearTap,
     this.onAlbumTap,
+    this.translucent = false,
   });
 
   final List<YearPoint> years;
@@ -24,6 +25,9 @@ class YearChartCard extends StatelessWidget {
   final bool showQuality;
   final ValueChanged<int>? onYearTap;
   final ValueChanged<Album>? onAlbumTap;
+
+  /// Lets a background image show through the card.
+  final bool translucent;
 
   @override
   Widget build(BuildContext context) {
@@ -65,7 +69,9 @@ class YearChartCard extends StatelessWidget {
         ),
         Container(
           padding: const EdgeInsets.fromLTRB(4, 10, 10, 10),
-          decoration: BoxDecoration(color: cs.surfaceContainer, borderRadius: BorderRadius.circular(16)),
+          decoration: BoxDecoration(
+              color: translucent ? cs.surfaceContainer.withValues(alpha: 0.55) : cs.surfaceContainer,
+              borderRadius: BorderRadius.circular(16)),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
