@@ -211,7 +211,7 @@ class AlbumCover extends StatelessWidget {
       child: url == null
           ? placeholder
           : Image.network(
-              url.replaceFirst('600x600bb', '200x200bb'),
+              size > 80 ? url : url.replaceFirst('600x600bb', '200x200bb'),
               width: size,
               height: size,
               fit: BoxFit.cover,
