@@ -98,6 +98,17 @@ class SettingsScreen extends StatelessWidget {
                   ),
                 ),
               ),
+              ListenableBuilder(
+                listenable: scope.settings,
+                builder: (context, _) => SwitchListTile(
+                  key: const ValueKey('backgrounds-switch'),
+                  secondary: const Icon(Icons.wallpaper_rounded),
+                  title: const Text('Background images'),
+                  subtitle: const Text('Faint band photos and cover collages behind groups and face-offs'),
+                  value: scope.settings.backgrounds,
+                  onChanged: scope.settings.setBackgrounds,
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 20),

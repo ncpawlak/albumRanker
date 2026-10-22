@@ -8,18 +8,31 @@ class SettingsController extends ChangeNotifier {
       : _themeMode = _prefs.getString(_themeKey) == 'light' ? ThemeMode.light : ThemeMode.dark,
         _qualityCoefficient = _prefs.getBool(_qualityKey) ?? false,
         _groupSort = AlbumSort.fromName(_prefs.getString(_groupSortKey)),
-        _chartCondensed = _prefs.getBool(_chartCondensedKey) ?? false;
+        _chartCondensed = _prefs.getBool(_chartCondensedKey) ?? false,
+        _backgrounds = _prefs.getBool(_backgroundsKey) ?? true;
 
   static const _themeKey = 'albumrank.theme';
   static const _qualityKey = 'albumrank.qualityCoefficient';
   static const _groupSortKey = 'albumrank.groupSort';
   static const _chartCondensedKey = 'albumrank.chartCondensed';
+  static const _backgroundsKey = 'albumrank.backgrounds';
 
   final SharedPreferences _prefs;
   ThemeMode _themeMode;
   bool _qualityCoefficient;
   AlbumSort _groupSort;
   bool _chartCondensed;
+  bool _backgrounds;
+
+  /// Faint band photos / cover collages behind group screens and face-offs.
+  bool get backgrounds => _backgrounds;
+
+  Future<void> setBackgrounds(bool value) async {
+    if (value == _backgrounds) return;
+    _backgrounds = value;
+    notifyListeners();
+    await _prefs.setBool(_backgroundsKey, value);
+  }
 
   ThemeMode get themeMode => _themeMode;
 
