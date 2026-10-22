@@ -8,6 +8,8 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'test_helpers.dart';
+
 void main() {
   late AlbumRepository repo;
 
@@ -31,7 +33,7 @@ void main() {
     await tester.enterText(find.byKey(const ValueKey('field-artist')), artist);
     await tester.enterText(find.byKey(const ValueKey('field-year')), year);
     await tester.enterText(find.byKey(const ValueKey('field-genre')), genre);
-    await tester.tap(find.byKey(ValueKey('star-$stars')));
+    await setRating(tester, stars.toDouble());
     await tester.pump(const Duration(milliseconds: 500));
     await tester.tap(find.byKey(const ValueKey('save-album')));
     await tester.pumpAndSettle();

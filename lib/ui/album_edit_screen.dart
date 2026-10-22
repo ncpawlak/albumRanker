@@ -371,11 +371,6 @@ class _AlbumEditScreenState extends State<AlbumEditScreen> {
                 _ratingError = false;
               }),
             ),
-            Padding(
-              padding: const EdgeInsets.only(top: 4, left: 4),
-              child: Text('Tap the left half of a star for a half star',
-                  style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
-            ),
             if (_ratingError)
               Padding(
                 padding: const EdgeInsets.only(top: 6, left: 4),

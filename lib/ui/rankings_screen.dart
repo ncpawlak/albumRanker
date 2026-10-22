@@ -4,6 +4,7 @@ import '../app_scope.dart';
 import '../logic/ranking.dart';
 import 'album_edit_screen.dart';
 import 'group_detail_screen.dart';
+import 'share_card_screen.dart';
 import 'widgets/album_tile.dart';
 import 'widgets/rank_medal.dart';
 import 'widgets/rating_widgets.dart';
@@ -41,7 +42,19 @@ class _RankingsScreenState extends State<RankingsScreen> {
     final theme = Theme.of(context);
     final muted = theme.textTheme.labelMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant);
     return Scaffold(
-      appBar: AppBar(title: const Text('Rankings'), centerTitle: false, toolbarHeight: 64),
+      appBar: AppBar(
+        title: const Text('Rankings'),
+        centerTitle: false,
+        toolbarHeight: 64,
+        actions: [
+          IconButton(
+            key: const ValueKey('share-rankings'),
+            tooltip: 'Share as image',
+            icon: const Icon(Icons.ios_share_rounded),
+            onPressed: repo.albums.isEmpty ? null : () => _openShare(context),
+          ),
+        ],
+      ),
       body: ListenableBuilder(
         listenable: Listenable.merge([repo, settings]),
         builder: (context, _) {
@@ -105,6 +118,32 @@ class _RankingsScreenState extends State<RankingsScreen> {
         },
       ),
     );
+  }
+
+  void _openShare(BuildContext context) {
+    final scope = AppScope.of(context);
+    final albums = scope.repository.albums;
+    final quality = scope.settings.qualityCoefficient;
+    final groupBy = _view.groupBy;
+    final Widget screen;
+    if (groupBy == null) {
+      screen = ShareCardScreen(
+        title: (n) => 'My top $n album${n == 1 ? '' : 's'}',
+        subtitle: 'Ranked by my rating · ${albums.length} albums rated',
+        entries: ShareEntry.fromAlbums(rankAlbums(albums)),
+      );
+    } else {
+      final groups = rankGroups(albums, groupBy, minAlbums: _minAlbums, useQuality: quality);
+      if (groups.isEmpty) return;
+      final noun = groupBy.label.toLowerCase();
+      screen = ShareCardScreen(
+        title: (n) => 'My top $n $noun${n == 1 ? '' : 's'}',
+        subtitle: '${quality ? 'Ranked by quality coefficient' : 'Ranked by average rating'}'
+            '${_minAlbums > 1 ? ' · $_minAlbums+ albums each' : ''}',
+        entries: ShareEntry.fromGroups(groups, quality: quality),
+      );
+    }
+    Navigator.of(context).push(MaterialPageRoute(builder: (_) => screen));
   }
 
   Widget _groupList(BuildContext context, GroupBy groupBy, bool quality, TextStyle? muted) {

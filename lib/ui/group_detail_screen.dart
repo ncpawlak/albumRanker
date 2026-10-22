@@ -4,6 +4,7 @@ import '../app_scope.dart';
 import '../logic/ranking.dart';
 import '../logic/year_chart.dart';
 import 'album_edit_screen.dart';
+import 'share_card_screen.dart';
 import 'widgets/album_tile.dart';
 import 'widgets/rating_widgets.dart';
 import 'widgets/year_chart_card.dart';
@@ -13,6 +14,15 @@ class GroupDetailScreen extends StatelessWidget {
 
   final GroupBy groupBy;
   final String groupKey;
+
+  String _shareTitle(String label, int n) {
+    final albums = 'album${n == 1 ? '' : 's'}';
+    return switch (groupBy) {
+      GroupBy.year => 'My top $n $albums of $label',
+      GroupBy.decade => 'My top $n $albums of the $label',
+      GroupBy.genre || GroupBy.artist => 'My top $n $label $albums',
+    };
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -34,6 +44,23 @@ class GroupDetailScreen extends StatelessWidget {
           appBar: AppBar(
             title: Text(group?.label ?? groupBy.label),
             titleTextStyle: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
+            actions: [
+              if (group != null)
+                IconButton(
+                  key: const ValueKey('share-group'),
+                  tooltip: 'Share as image',
+                  icon: const Icon(Icons.ios_share_rounded),
+                  onPressed: () => Navigator.of(context).push(MaterialPageRoute(
+                    builder: (_) => ShareCardScreen(
+                      title: (n) => _shareTitle(group!.label, n),
+                      subtitle: 'Average ${group!.average}/10 · ${group.count} album${group.count == 1 ? '' : 's'}'
+                          ' · #${group.rank} by ${groupBy.label.toLowerCase()}',
+                      entries: ShareEntry.fromAlbums(rankAlbums(group.albums),
+                          showArtist: groupBy != GroupBy.artist),
+                    ),
+                  )),
+                ),
+            ],
           ),
           body: group == null
               ? Center(child: Text('No albums left in this group',

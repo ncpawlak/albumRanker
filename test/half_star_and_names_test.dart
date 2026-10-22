@@ -14,6 +14,7 @@ import 'package:http/testing.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'ranking_test.dart' show album;
+import 'test_helpers.dart';
 
 Future<AlbumRepository> newRepo([Map<String, Object> values = const {}]) async {
   SharedPreferences.setMockInitialValues(values);
@@ -174,32 +175,41 @@ void main() {
       return repo;
     }
 
-    testWidgets('tapping the left half of a star sets a half star', (tester) async {
+    testWidgets('the −/+ buttons step by half stars and the slider reaches the ends', (tester) async {
       final repo = await pumpApp(tester);
       await tester.tap(find.byIcon(Icons.add_rounded).first);
       await tester.pumpAndSettle();
-      await tester.enterText(find.byType(TextField).at(0), 'Album');
-      await tester.enterText(find.byType(TextField).at(1), 'Artist');
-      await tester.enterText(find.byType(TextField).at(2), '2020');
-      await tester.enterText(find.byType(TextField).at(3), 'Metal');
+      await tester.enterText(find.byKey(const ValueKey('field-title')), 'Album');
+      await tester.enterText(find.byKey(const ValueKey('field-artist')), 'Artist');
+      await tester.enterText(find.byKey(const ValueKey('field-year')), '2020');
+      await tester.enterText(find.byKey(const ValueKey('field-genre')), 'Metal');
       await tester.pump(const Duration(seconds: 1));
-      final star = tester.getRect(find.byKey(const ValueKey('star-8')));
-      await tester.tapAt(Offset(star.left + star.width * 0.2, star.center.dy));
+      expect(ratingText(tester), 'Not rated');
+      final plus = find.byKey(const ValueKey('rating-plus'));
+      final minus = find.byKey(const ValueKey('rating-minus'));
+      await tester.ensureVisible(plus);
+      await tester.tap(plus);
       await tester.pump();
-      expect(find.descendant(of: find.byKey(const ValueKey('rating-value')), matching: find.text('7.5')),
-          findsOneWidget);
-      await tester.tapAt(Offset(star.left + star.width * 0.8, star.center.dy));
+      expect(ratingText(tester), '6');
+      await tester.tap(minus);
       await tester.pump();
-      expect(find.descendant(of: find.byKey(const ValueKey('rating-value')), matching: find.text('8')),
-          findsOneWidget);
-      await tester.tapAt(Offset(star.left + star.width * 0.2, star.center.dy));
+      expect(ratingText(tester), '5.5');
+
+      final slider = find.byKey(const ValueKey('rating-slider'));
+      await tester.drag(slider, const Offset(600, 0));
       await tester.pump();
+      expect(ratingText(tester), '10');
+      expect(tester.widget<IconButton>(plus).onPressed, isNull, reason: 'cannot go above 10');
+      await tester.drag(slider, const Offset(-600, 0));
+      await tester.pump();
+      expect(ratingText(tester), '1');
+
+      await setRating(tester, 7.5);
       await tester.tap(find.byKey(const ValueKey('save-album')));
       await tester.pumpAndSettle();
       expect(repo.albums.single.rating, 7.5);
       expect(find.text('7.5'), findsOneWidget);
     });
-
     testWidgets('settings merges duplicate names', (tester) async {
       final repo = await pumpApp(tester, albums: [
         for (final (i, artist) in ['A Day to Remember', 'A Day To Remember', 'A Day to Remember'].indexed)

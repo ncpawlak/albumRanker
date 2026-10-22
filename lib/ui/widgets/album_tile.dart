@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../../models/album.dart';
-import '../../theme/rating_colors.dart';
 import 'rating_widgets.dart';
 
 class AlbumTile extends StatelessWidget {
@@ -27,13 +26,7 @@ class AlbumTile extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               if (leading != null) ...[leading!, const SizedBox(width: 10)],
-              Container(
-                width: 4,
-                decoration: BoxDecoration(
-                  color: ratingColor(album.rating),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-              ),
+              Center(child: AlbumCover(album: album)),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
