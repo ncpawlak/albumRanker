@@ -133,7 +133,8 @@ class _NumberCard extends StatelessWidget {
   }
 }
 
-/// Ten colored bars, one per star rating, scaled to the most common rating.
+/// One colored bar per half-star rating (1, 1.5 ... 10), scaled to the most
+/// common rating. Only whole ratings are labelled to keep the axis readable.
 class _Distribution extends StatelessWidget {
   const _Distribution(this.counts);
 
@@ -145,7 +146,7 @@ class _Distribution extends StatelessWidget {
     final maxCount = counts.reduce((a, b) => a > b ? a : b);
     const barArea = 110.0;
     return Container(
-      padding: const EdgeInsets.fromLTRB(10, 14, 10, 10),
+      padding: const EdgeInsets.fromLTRB(8, 14, 8, 10),
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainer,
         borderRadius: BorderRadius.circular(16),
@@ -153,25 +154,34 @@ class _Distribution extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          for (var r = Album.minRating; r <= Album.maxRating; r++)
+          for (var i = 0; i < counts.length; i++)
             Expanded(
               child: Semantics(
-                label: '$r stars: ${counts[r - 1]} albums',
+                label: '${formatRating(LibraryStats.bucketRating(i))} stars: ${counts[i]} albums',
                 child: Column(
                   children: [
-                    Text(counts[r - 1] == 0 ? '' : '${counts[r - 1]}',
-                        style: theme.textTheme.labelSmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(counts[i] == 0 ? '' : '${counts[i]}',
+                          style: theme.textTheme.labelSmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+                    ),
                     const SizedBox(height: 4),
                     Container(
-                      height: maxCount == 0 ? 0 : 4 + (barArea - 4) * counts[r - 1] / maxCount,
-                      margin: const EdgeInsets.symmetric(horizontal: 3),
+                      height: maxCount == 0 ? 0 : 4 + (barArea - 4) * counts[i] / maxCount,
+                      margin: const EdgeInsets.symmetric(horizontal: 1.5),
                       decoration: BoxDecoration(
-                        color: counts[r - 1] == 0 ? theme.colorScheme.surfaceContainerHigh : ratingColor(r),
-                        borderRadius: BorderRadius.circular(6),
+                        color: counts[i] == 0
+                            ? theme.colorScheme.surfaceContainerHigh
+                            : ratingColor(LibraryStats.bucketRating(i)),
+                        borderRadius: BorderRadius.circular(4),
                       ),
                     ),
                     const SizedBox(height: 6),
-                    Text('$r', style: theme.textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w700)),
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(i.isEven ? formatRating(LibraryStats.bucketRating(i)) : '',
+                          style: theme.textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w700)),
+                    ),
                   ],
                 ),
               ),

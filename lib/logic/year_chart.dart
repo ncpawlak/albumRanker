@@ -2,7 +2,7 @@ import '../models/album.dart';
 import 'ranking.dart';
 
 /// One year on the ratings-by-year chart. Years with no albums are kept so the
-/// timeline stays continuous; they have no dots and break the average line.
+/// timeline stays continuous; they have no dots and the average line bridges them.
 class YearPoint {
   YearPoint(this.year, this.albums)
       : average = albums.isEmpty ? null : roundedAverage(_sum(albums), albums.length),
@@ -19,15 +19,15 @@ class YearPoint {
   final int? qualityTenths;
 
   /// How many albums share each rating this year (rating -> count).
-  final Map<int, int> stacks;
+  final Map<double, int> stacks;
 
   bool get isEmpty => albums.isEmpty;
   double? get quality => qualityTenths == null ? null : qualityTenths! / 10;
 
-  static int _sum(List<Album> albums) => albums.fold(0, (s, a) => s + a.rating);
+  static double _sum(List<Album> albums) => ratingSum(albums);
 
-  static Map<int, int> _stacks(List<Album> albums) {
-    final m = <int, int>{};
+  static Map<double, int> _stacks(List<Album> albums) {
+    final m = <double, int>{};
     for (final a in albums) {
       m[a.rating] = (m[a.rating] ?? 0) + 1;
     }

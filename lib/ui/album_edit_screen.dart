@@ -26,7 +26,7 @@ class _AlbumEditScreenState extends State<AlbumEditScreen> {
   late final TextEditingController _year;
   late final TextEditingController _genre;
   final _titleFocus = FocusNode();
-  int? _rating;
+  double? _rating;
   String? _artworkUrl;
   String? _externalId;
   bool _ratingError = false;
@@ -160,7 +160,7 @@ class _AlbumEditScreenState extends State<AlbumEditScreen> {
         builder: (context) => AlertDialog(
           title: const Text('Already in your list'),
           content: Text('"${e.existing.title}" by ${e.existing.artist} is already in your albums '
-              '(rated ${e.existing.rating}/10).'),
+              '(rated ${formatRating(e.existing.rating)}/10).'),
           actions: [
             TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
             FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Edit existing')),
@@ -370,6 +370,11 @@ class _AlbumEditScreenState extends State<AlbumEditScreen> {
                 _rating = v;
                 _ratingError = false;
               }),
+            ),
+            Padding(
+              padding: const EdgeInsets.only(top: 4, left: 4),
+              child: Text('Tap the left half of a star for a half star',
+                  style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
             ),
             if (_ratingError)
               Padding(

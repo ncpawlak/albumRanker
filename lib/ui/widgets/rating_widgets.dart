@@ -33,7 +33,7 @@ class RatingBadge extends StatelessWidget {
       child: Center(
         widthFactor: 1,
         child: Text(
-          rating.toStringAsFixed(decimals),
+          decimals == 0 ? formatRating(rating) : rating.toStringAsFixed(decimals),
           style: TextStyle(
             color: onRatingColor(colorRating ?? rating),
             fontWeight: FontWeight.w800,
@@ -45,11 +45,11 @@ class RatingBadge extends StatelessWidget {
   }
 }
 
-/// Ten small segments, the first [rating] filled with the rating color.
+/// Ten small segments filled up to [rating]; a half star half-fills its segment.
 class StarStrip extends StatelessWidget {
   const StarStrip(this.rating, {super.key});
 
-  final int rating;
+  final double rating;
 
   @override
   Widget build(BuildContext context) {
@@ -63,22 +63,27 @@ class StarStrip extends StatelessWidget {
             width: 9,
             height: 9,
             margin: const EdgeInsets.only(right: 2),
+            clipBehavior: Clip.antiAlias,
             decoration: BoxDecoration(
-              color: i < rating ? fill : empty,
+              color: i + 1 <= rating ? fill : empty,
               borderRadius: BorderRadius.circular(2),
             ),
+            child: i < rating && rating < i + 1
+                ? Align(alignment: Alignment.centerLeft, child: Container(width: 4.5, color: fill))
+                : null,
           ),
       ],
     );
   }
 }
 
-/// Tap-to-set 1–10 star rating input.
+/// Tap-to-set rating input: tap a star for a whole rating, or its left half
+/// for a half star (e.g. the left half of star 8 gives 7.5).
 class RatingPicker extends StatelessWidget {
   const RatingPicker({super.key, required this.value, required this.onChanged});
 
-  final int? value;
-  final ValueChanged<int> onChanged;
+  final double? value;
+  final ValueChanged<double> onChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -86,7 +91,7 @@ class RatingPicker extends StatelessWidget {
     final v = value;
     final color = v == null ? scheme.outline : ratingColor(v);
     return LayoutBuilder(builder: (context, constraints) {
-      final starSize = ((constraints.maxWidth - 64) / Album.maxRating).clamp(18.0, 34.0);
+      final starSize = ((constraints.maxWidth - 80) / Album.maxRating).clamp(18.0, 34.0);
       return Row(
         children: [
           for (var i = 1; i <= Album.maxRating; i++)
@@ -94,19 +99,26 @@ class RatingPicker extends StatelessWidget {
               button: true,
               label: '$i star${i == 1 ? '' : 's'}',
               selected: v == i,
-              child: InkResponse(
+              child: GestureDetector(
                 key: ValueKey('star-$i'),
-                onTap: () => onChanged(i),
-                radius: starSize * 0.7,
+                behavior: HitTestBehavior.opaque,
+                onTapUp: (d) {
+                  final half = d.localPosition.dx < starSize / 2 && i > Album.minRating;
+                  onChanged(half ? i - 0.5 : i.toDouble());
+                },
                 child: Icon(
-                  v != null && i <= v ? Icons.star_rounded : Icons.star_outline_rounded,
+                  v == null || v <= i - 1
+                      ? Icons.star_outline_rounded
+                      : v < i
+                          ? Icons.star_half_rounded
+                          : Icons.star_rounded,
                   size: starSize,
-                  color: v != null && i <= v ? color : scheme.outline,
+                  color: v != null && v > i - 1 ? color : scheme.outline,
                 ),
               ),
             ),
           const Spacer(),
-          if (v != null) RatingBadge(v, size: 40),
+          if (v != null) RatingBadge(v, key: const ValueKey('rating-value'), size: 40),
         ],
       );
     });

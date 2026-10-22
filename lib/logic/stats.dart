@@ -24,12 +24,11 @@ class LibraryStats {
   });
 
   factory LibraryStats.from(List<Album> albums, {int top = 5}) {
-    final distribution = List<int>.filled(Album.maxRating, 0);
-    var sum = 0;
+    final distribution = List<int>.filled(LibraryStats.ratingBuckets, 0);
     for (final a in albums) {
-      distribution[a.rating - 1]++;
-      sum += a.rating;
+      distribution[a.ratingHalves - 2 * Album.minRating]++;
     }
+    final sum = ratingSum(albums);
 
     List<CountEntry> byCount(GroupBy by) {
       final groups = rankGroups(albums, by)
@@ -62,8 +61,14 @@ class LibraryStats {
   /// Whole-number average of every rating, or null when the library is empty.
   final int? average;
 
-  /// Album count per rating; index 0 is 1 star.
+  /// Album count per half-star rating; index 0 is 1 star, index 1 is 1.5 ...
   final List<int> distribution;
+
+  /// 1, 1.5, 2 ... 10.
+  static const ratingBuckets = 2 * (Album.maxRating - Album.minRating) + 1;
+
+  /// The rating a [distribution] index stands for.
+  static double bucketRating(int index) => Album.minRating + index / 2;
 
   final int artistCount;
   final int genreCount;

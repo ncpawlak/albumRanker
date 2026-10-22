@@ -11,6 +11,32 @@ class DuplicateAlbumException implements Exception {
   final Album existing;
 }
 
+/// Lower-cased with spacing collapsed, so "Born Of Osiris" == "born of  osiris".
+String normalizeName(String s) => s.trim().toLowerCase().replaceAll(RegExp(r'\s+'), ' ');
+
+enum NameField {
+  artist('Artist'),
+  genre('Genre');
+
+  const NameField(this.label);
+  final String label;
+
+  String of(Album a) => this == artist ? a.artist : a.genre;
+}
+
+/// One artist or genre that appears with several spellings.
+class NameVariants {
+  const NameVariants(this.field, this.spellings);
+
+  final NameField field;
+
+  /// Most-used spelling first.
+  final List<({String spelling, int count})> spellings;
+
+  String get preferred => spellings.first.spelling;
+  int get albumCount => spellings.fold(0, (s, e) => s + e.count);
+}
+
 /// Holds the master album list and persists it as versioned JSON.
 ///
 /// Stored shape: `{"schemaVersion": N, "albums": [...]}`. When fields are added
@@ -61,7 +87,7 @@ class AlbumRepository extends ChangeNotifier {
     required String artist,
     required int year,
     required String genre,
-    required int rating,
+    required double rating,
     String? artworkUrl,
     String? externalId,
   }) async {
@@ -71,9 +97,9 @@ class AlbumRepository extends ChangeNotifier {
     final album = Album(
       id: _newId(),
       title: title.trim(),
-      artist: artist.trim(),
+      artist: _existingSpelling(NameField.artist, artist) ?? artist.trim(),
       year: year,
-      genre: genre.trim(),
+      genre: _existingSpelling(NameField.genre, genre) ?? genre.trim(),
       rating: rating,
       artworkUrl: artworkUrl,
       externalId: externalId,
@@ -85,18 +111,100 @@ class AlbumRepository extends ChangeNotifier {
     return album;
   }
 
+  /// Saves [album]. A name that matches another album's artist or genre apart
+  /// from capitalization/spacing takes that existing spelling, so one artist
+  /// never splits in two. Changing only the capitalization of this album's own
+  /// artist or genre is treated as a correction and applied everywhere.
   Future<void> update(Album album) async {
     final dup = findDuplicate(album.title, album.artist, excludeId: album.id);
     if (dup != null) throw DuplicateAlbumException(dup);
     final i = _albums.indexWhere((a) => a.id == album.id);
     if (i < 0) throw StateError('Album ${album.id} not found');
+    final old = _albums[i];
+    String resolve(NameField field) {
+      final typed = field.of(album).trim();
+      final before = field.of(old);
+      if (typed != before && normalizeName(typed) == normalizeName(before)) {
+        _renameAll(field, typed);
+        return typed;
+      }
+      return _existingSpelling(field, typed, excludeId: album.id) ?? typed;
+    }
+
+    final artist = resolve(NameField.artist);
+    final genre = resolve(NameField.genre);
     _albums[i] = album.copyWith(
       title: album.title.trim(),
-      artist: album.artist.trim(),
-      genre: album.genre.trim(),
+      artist: artist,
+      genre: genre,
       updatedAt: DateTime.now(),
     );
     await _save();
+  }
+
+  /// Artists and genres that are spelled more than one way, e.g.
+  /// "BABYMETAL" and "Babymetal". Each entry's spellings are most-used first.
+  List<NameVariants> nameVariants() {
+    final result = <NameVariants>[];
+    for (final field in NameField.values) {
+      final groups = <String, Map<String, int>>{};
+      for (final a in _albums) {
+        final name = field.of(a);
+        final counts = groups.putIfAbsent(normalizeName(name), () => {});
+        counts[name] = (counts[name] ?? 0) + 1;
+      }
+      for (final counts in groups.values) {
+        if (counts.length < 2) continue;
+        final spellings = counts.entries.toList()
+          ..sort((a, b) {
+            final c = b.value.compareTo(a.value);
+            return c != 0 ? c : a.key.compareTo(b.key);
+          });
+        result.add(NameVariants(field, [for (final e in spellings) (spelling: e.key, count: e.value)]));
+      }
+    }
+    result.sort((a, b) {
+      final f = a.field.index.compareTo(b.field.index);
+      return f != 0 ? f : a.preferred.toLowerCase().compareTo(b.preferred.toLowerCase());
+    });
+    return result;
+  }
+
+  /// Renames every album whose [field] matches [keep] (ignoring case/spacing)
+  /// to exactly [keep]. Returns how many albums changed.
+  Future<int> mergeName(NameField field, String keep) async {
+    final changed = _renameAll(field, keep);
+    if (changed > 0) await _save();
+    return changed;
+  }
+
+  int _renameAll(NameField field, String keep) {
+    final key = normalizeName(keep);
+    var changed = 0;
+    final now = DateTime.now();
+    for (var i = 0; i < _albums.length; i++) {
+      final a = _albums[i];
+      final name = field.of(a);
+      if (name == keep || normalizeName(name) != key) continue;
+      _albums[i] = field == NameField.artist
+          ? a.copyWith(artist: keep, updatedAt: now)
+          : a.copyWith(genre: keep, updatedAt: now);
+      changed++;
+    }
+    return changed;
+  }
+
+  /// The most-used existing spelling of [name] in [field], if any album uses one.
+  String? _existingSpelling(NameField field, String name, {String? excludeId}) {
+    final key = normalizeName(name);
+    final counts = <String, int>{};
+    for (final a in _albums) {
+      if (a.id == excludeId) continue;
+      final n = field.of(a);
+      if (normalizeName(n) == key) counts[n] = (counts[n] ?? 0) + 1;
+    }
+    if (counts.isEmpty) return null;
+    return (counts.entries.toList()..sort((a, b) => b.value.compareTo(a.value))).first.key;
   }
 
   Future<void> delete(String id) async {

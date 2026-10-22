@@ -41,7 +41,7 @@ void main() {
       final s = LibraryStats.from(const []);
       expect(s.total, 0);
       expect(s.average, isNull);
-      expect(s.distribution, List.filled(10, 0));
+      expect(s.distribution, List.filled(19, 0));
     });
 
     test('counts, distribution and top lists', () {
@@ -53,8 +53,8 @@ void main() {
       ], top: 2);
       expect(s.total, 4);
       expect(s.average, 9); // 34/4 = 8.5 -> 9
-      expect(s.distribution[8], 2);
-      expect(s.distribution[9], 1);
+      expect(s.distribution[16], 2); // 9 stars
+      expect(s.distribution[18], 1); // 10 stars
       expect(s.artistCount, 3);
       expect(s.genreCount, 3);
       expect(s.topArtists.first.label, 'Radiohead');
