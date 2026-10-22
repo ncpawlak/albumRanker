@@ -40,6 +40,9 @@ class _AlbumEditScreenState extends State<AlbumEditScreen> {
 
   bool get _isEditing => widget.album != null;
 
+  /// Latest saved copy of the album being edited, for its face-off record.
+  Album? get _record => widget.album == null ? null : AppScope.of(context).repository.byId(widget.album!.id);
+
   @override
   void initState() {
     super.initState();
@@ -131,7 +134,7 @@ class _AlbumEditScreenState extends State<AlbumEditScreen> {
     try {
       final year = int.parse(_year.text.trim());
       if (_isEditing) {
-        await repo.update(widget.album!.copyWith(
+        await repo.update((repo.byId(widget.album!.id) ?? widget.album!).copyWith(
           title: _title.text,
           artist: _artist.text,
           year: year,
@@ -371,6 +374,20 @@ class _AlbumEditScreenState extends State<AlbumEditScreen> {
                 _ratingError = false;
               }),
             ),
+            if (_record case final a? when a.wins + a.losses > 0)
+              Padding(
+                padding: const EdgeInsets.only(top: 12),
+                child: Row(
+                  key: const ValueKey('faceoff-record'),
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.bolt_rounded, size: 18, color: theme.colorScheme.primary),
+                    const SizedBox(width: 4),
+                    Text('Face-offs: ${a.wins}–${a.losses}',
+                        style: theme.textTheme.labelLarge?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+                  ],
+                ),
+              ),
             if (_ratingError)
               Padding(
                 padding: const EdgeInsets.only(top: 6, left: 4),

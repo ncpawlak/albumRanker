@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'albums_screen.dart';
+import 'faceoff_screen.dart';
 import 'rankings_screen.dart';
 import 'settings_screen.dart';
 import 'stats_screen.dart';
@@ -20,7 +21,7 @@ class _HomeShellState extends State<HomeShell> {
     return Scaffold(
       body: IndexedStack(
         index: _index,
-        children: const [AlbumsScreen(), RankingsScreen(), StatsScreen(), SettingsScreen()],
+        children: const [AlbumsScreen(), RankingsScreen(), FaceOffScreen(), StatsScreen(), SettingsScreen()],
       ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _index,
@@ -28,6 +29,7 @@ class _HomeShellState extends State<HomeShell> {
         destinations: const [
           NavigationDestination(icon: Icon(Icons.library_music_outlined), selectedIcon: Icon(Icons.library_music_rounded), label: 'Albums'),
           NavigationDestination(icon: Icon(Icons.emoji_events_outlined), selectedIcon: Icon(Icons.emoji_events_rounded), label: 'Rankings'),
+          NavigationDestination(icon: Icon(Icons.bolt_outlined), selectedIcon: Icon(Icons.bolt_rounded), label: 'Face-off'),
           NavigationDestination(icon: Icon(Icons.insights_outlined), selectedIcon: Icon(Icons.insights_rounded), label: 'Stats'),
           NavigationDestination(icon: Icon(Icons.settings_outlined), selectedIcon: Icon(Icons.settings_rounded), label: 'Settings'),
         ],

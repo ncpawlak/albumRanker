@@ -8,6 +8,8 @@ class Album {
     required this.rating,
     this.artworkUrl,
     this.externalId,
+    this.wins = 0,
+    this.losses = 0,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -29,6 +31,10 @@ class Album {
   int get ratingHalves => (rating * 2).round();
   final String? artworkUrl;
   final String? externalId;
+
+  /// Head-to-head record from face-offs.
+  final int wins;
+  final int losses;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -52,6 +58,8 @@ class Album {
     double? rating,
     String? artworkUrl,
     String? externalId,
+    int? wins,
+    int? losses,
     DateTime? updatedAt,
   }) {
     return Album(
@@ -63,6 +71,8 @@ class Album {
       rating: rating ?? this.rating,
       artworkUrl: artworkUrl ?? this.artworkUrl,
       externalId: externalId ?? this.externalId,
+      wins: wins ?? this.wins,
+      losses: losses ?? this.losses,
       createdAt: createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
@@ -78,6 +88,8 @@ class Album {
         'rating': rating == rating.roundToDouble() ? rating.toInt() : rating,
         if (artworkUrl != null) 'artworkUrl': artworkUrl,
         if (externalId != null) 'externalId': externalId,
+        if (wins > 0) 'wins': wins,
+        if (losses > 0) 'losses': losses,
         'createdAt': createdAt.toIso8601String(),
         'updatedAt': updatedAt.toIso8601String(),
       };
@@ -96,6 +108,8 @@ class Album {
       rating: rating,
       artworkUrl: json['artworkUrl'] as String?,
       externalId: json['externalId'] as String?,
+      wins: (json['wins'] as num?)?.toInt() ?? 0,
+      losses: (json['losses'] as num?)?.toInt() ?? 0,
       createdAt: DateTime.parse(json['createdAt'] as String),
       updatedAt: DateTime.parse(json['updatedAt'] as String),
     );

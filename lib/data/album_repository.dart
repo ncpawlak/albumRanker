@@ -142,6 +142,26 @@ class AlbumRepository extends ChangeNotifier {
     await _save();
   }
 
+  /// Adds a face-off win and loss to the two albums' head-to-head records.
+  Future<void> recordFaceOff({required String winnerId, required String loserId}) async {
+    for (var i = 0; i < _albums.length; i++) {
+      final a = _albums[i];
+      if (a.id == winnerId) _albums[i] = a.copyWith(wins: a.wins + 1);
+      if (a.id == loserId) _albums[i] = a.copyWith(losses: a.losses + 1);
+    }
+    await _save();
+  }
+
+  /// Sets several ratings at once (album id → rating), e.g. after a face-off.
+  Future<void> setRatings(Map<String, double> ratings) async {
+    final now = DateTime.now();
+    for (var i = 0; i < _albums.length; i++) {
+      final r = ratings[_albums[i].id];
+      if (r != null && Album.isValidRating(r)) _albums[i] = _albums[i].copyWith(rating: r, updatedAt: now);
+    }
+    await _save();
+  }
+
   /// Artists and genres that are spelled more than one way, e.g.
   /// "BABYMETAL" and "Babymetal". Each entry's spellings are most-used first.
   List<NameVariants> nameVariants() {
