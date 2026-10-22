@@ -70,6 +70,45 @@ int compareAlbumsByRating(Album a, Album b) {
   return a.artist.toLowerCase().compareTo(b.artist.toLowerCase());
 }
 
+/// How albums inside a group are listed.
+enum AlbumSort {
+  rating('Rating'),
+  title('A–Z'),
+  year('Year');
+
+  const AlbumSort(this.label);
+  final String label;
+
+  static AlbumSort fromName(String? name) =>
+      values.firstWhere((s) => s.name == name, orElse: () => AlbumSort.rating);
+}
+
+/// Rating high→low, title A→Z, or year newest first; ties fall back to rating
+/// then title so the order is always stable.
+List<Album> sortAlbums(List<Album> albums, AlbumSort sort) {
+  int byTitle(Album a, Album b) {
+    final t = a.title.toLowerCase().compareTo(b.title.toLowerCase());
+    return t != 0 ? t : a.artist.toLowerCase().compareTo(b.artist.toLowerCase());
+  }
+
+  final sorted = [...albums];
+  switch (sort) {
+    case AlbumSort.rating:
+      sorted.sort(compareAlbumsByRating);
+    case AlbumSort.title:
+      sorted.sort((a, b) {
+        final t = byTitle(a, b);
+        return t != 0 ? t : b.rating.compareTo(a.rating);
+      });
+    case AlbumSort.year:
+      sorted.sort((a, b) {
+        final y = b.year.compareTo(a.year);
+        return y != 0 ? y : compareAlbumsByRating(a, b);
+      });
+  }
+  return sorted;
+}
+
 /// Groups [albums] by [by] and ranks groups by their rounded average rating.
 ///
 /// Groups whose rounded averages are equal share a rank (competition ranking:
