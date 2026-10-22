@@ -57,6 +57,9 @@ android {
             } else {
                 signingConfigs.getByName("debug")
             }
+            // R8 strips plugin methods (shared_preferences) and hangs startup; keep shrinking off.
+            isMinifyEnabled = false
+            isShrinkResources = false
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }
