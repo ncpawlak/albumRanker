@@ -2,7 +2,7 @@ import 'package:albumrank/logic/ranking.dart';
 import 'package:albumrank/models/album.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-Album album(String title, String artist, int year, String genre, int rating) {
+Album album(String title, String artist, int year, String genre, num rating) {
   final t = DateTime(2024);
   return Album(
     id: '$title-$artist',
@@ -10,7 +10,7 @@ Album album(String title, String artist, int year, String genre, int rating) {
     artist: artist,
     year: year,
     genre: genre,
-    rating: rating,
+    rating: rating.toDouble(),
     createdAt: t,
     updatedAt: t,
   );

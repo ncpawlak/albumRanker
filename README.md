@@ -5,6 +5,8 @@ Android app (Flutter) for rating albums 1–10 and ranking years, decades, genre
 ## Features
 
 - Master list of albums (title, artist, year, genre, 1–10 rating) with add / edit / delete and undo.
+- Half-star ratings (tap the left half of a star, e.g. 7.5); group averages stay whole numbers.
+- Artist and genre names are matched case-insensitively on save; Settings › Duplicate names merges existing spellings (e.g. Babymetal / BABYMETAL).
 - Auto-fill from the iTunes Search API while typing; works offline with manual entry.
 - Rankings by Year, Decade, Genre, Artist (whole-number averages, shared ranks for ties) plus an all-albums leaderboard. Ranks 1–3 get gold, silver and bronze crowns (ties share a crown).
 - Group details sort by rating, A–Z or year (newest first); the last choice is remembered.

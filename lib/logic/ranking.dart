@@ -47,20 +47,26 @@ const qualityPrior = 5;
 const qualityWeight = 2;
 
 /// Quality coefficient: (sum + prior * weight) / (count + weight), returned in
-/// tenths and rounded half up with integer math.
-int qualityTenthsFor(int sum, int count) {
+/// tenths and rounded half up with integer math. [sum] may contain half stars.
+int qualityTenthsFor(num sum, int count) {
   if (count <= 0) throw ArgumentError.value(count, 'count', 'must be > 0');
-  final numerator = 10 * (sum + qualityPrior * qualityWeight);
-  final den = count + qualityWeight;
+  final halves = _halves(sum);
+  final numerator = 10 * (halves + 2 * qualityPrior * qualityWeight);
+  final den = 2 * (count + qualityWeight);
   return (2 * numerator + den) ~/ (2 * den);
 }
 
 /// Rounds sum/count to the nearest whole number, halves rounding up.
-/// Uses integer math so 7.5 always becomes 8 (no floating point drift).
-int roundedAverage(int sum, int count) {
+/// Uses integer half-star math so 7.5 always becomes 8 (no floating point drift).
+int roundedAverage(num sum, int count) {
   if (count <= 0) throw ArgumentError.value(count, 'count', 'must be > 0');
-  return (2 * sum + count) ~/ (2 * count);
+  return (_halves(sum) + count) ~/ (2 * count);
 }
+
+int _halves(num sum) => (sum * 2).round();
+
+/// Sum of [albums]' ratings (may include half stars).
+double ratingSum(Iterable<Album> albums) => albums.fold(0.0, (s, a) => s + a.ratingHalves) / 2;
 
 int compareAlbumsByRating(Album a, Album b) {
   final byRating = b.rating.compareTo(a.rating);
@@ -130,7 +136,7 @@ List<RankedGroup> rankGroups(List<Album> albums, GroupBy by, {int minAlbums = 1,
   final unranked = <({String key, String label, int average, int quality, List<Album> albums})>[];
   buckets.forEach((key, list) {
     if (list.length < minAlbums) return;
-    final sum = list.fold<int>(0, (s, a) => s + a.rating);
+    final sum = ratingSum(list);
     list.sort(compareAlbumsByRating);
     unranked.add((
       key: key,

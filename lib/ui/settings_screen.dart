@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import '../app_scope.dart';
 import '../services/auto_backup_service.dart';
 import '../theme/rating_colors.dart';
+import 'duplicate_names_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -96,6 +97,29 @@ class SettingsScreen extends StatelessWidget {
                     ),
                   ),
                 ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          _Section(
+            title: 'Library',
+            children: [
+              ListenableBuilder(
+                listenable: scope.repository,
+                builder: (context, _) {
+                  final n = scope.repository.nameVariants().length;
+                  return ListTile(
+                    key: const ValueKey('duplicate-names'),
+                    leading: Icon(Icons.merge_rounded, color: n > 0 ? theme.colorScheme.primary : null),
+                    title: const Text('Duplicate names'),
+                    subtitle: Text(n == 0
+                        ? 'No artists or genres spelled two ways'
+                        : '$n name${n == 1 ? ' is' : 's are'} spelled more than one way'),
+                    trailing: const Icon(Icons.chevron_right_rounded),
+                    onTap: () => Navigator.of(context)
+                        .push(MaterialPageRoute(builder: (_) => const DuplicateNamesScreen())),
+                  );
+                },
               ),
             ],
           ),

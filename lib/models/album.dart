@@ -13,6 +13,9 @@ class Album {
   });
 
   static const int minRating = 1;
+
+  /// Ratings move in half stars: 1, 1.5, 2 ... 10.
+  static const double ratingStep = 0.5;
   static const int maxRating = 10;
 
   final String id;
@@ -20,13 +23,18 @@ class Album {
   final String artist;
   final int year;
   final String genre;
-  final int rating;
+  final double rating;
+
+  /// The rating in half-star units (7.5 -> 15), for exact integer math.
+  int get ratingHalves => (rating * 2).round();
   final String? artworkUrl;
   final String? externalId;
   final DateTime createdAt;
   final DateTime updatedAt;
 
   int get decade => year ~/ 10 * 10;
+
+  static bool isValidRating(num r) => r >= minRating && r <= maxRating && (r * 2) == (r * 2).roundToDouble();
 
   /// Case/whitespace-insensitive identity used for duplicate detection.
   String get duplicateKey => makeDuplicateKey(title, artist);
@@ -41,7 +49,7 @@ class Album {
     String? artist,
     int? year,
     String? genre,
-    int? rating,
+    double? rating,
     String? artworkUrl,
     String? externalId,
     DateTime? updatedAt,
@@ -66,7 +74,8 @@ class Album {
         'artist': artist,
         'year': year,
         'genre': genre,
-        'rating': rating,
+        // Whole ratings stay ints so older app versions can still read backups.
+        'rating': rating == rating.roundToDouble() ? rating.toInt() : rating,
         if (artworkUrl != null) 'artworkUrl': artworkUrl,
         if (externalId != null) 'externalId': externalId,
         'createdAt': createdAt.toIso8601String(),
@@ -74,8 +83,8 @@ class Album {
       };
 
   factory Album.fromJson(Map<String, dynamic> json) {
-    final rating = (json['rating'] as num).toInt();
-    if (rating < minRating || rating > maxRating) {
+    final rating = (json['rating'] as num).toDouble();
+    if (!isValidRating(rating)) {
       throw FormatException('Rating out of range: $rating');
     }
     return Album(
@@ -92,3 +101,7 @@ class Album {
     );
   }
 }
+
+/// 7 -> '7', 7.5 -> '7.5'.
+String formatRating(num rating) =>
+    rating == rating.roundToDouble() ? rating.toInt().toString() : rating.toStringAsFixed(1);

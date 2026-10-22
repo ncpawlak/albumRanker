@@ -68,7 +68,7 @@ class _YearRatingChartState extends State<YearRatingChart> {
   /// Opens the album whose dot row is nearest the tap; several albums sharing
   /// that dot get a picker sheet.
   Future<void> _openAlbumAt(YearPoint point, double dy) async {
-    int? nearest;
+    double? nearest;
     var best = double.infinity;
     for (final r in point.stacks.keys) {
       final dist = (dy - _Geometry.y(r)).abs();
@@ -78,7 +78,8 @@ class _YearRatingChartState extends State<YearRatingChart> {
       }
     }
     if (nearest == null || best > _Geometry.step * 0.75) return;
-    final albums = [for (final a in point.albums) if (a.rating == nearest) a]
+    final row = nearest;
+    final albums = [for (final a in point.albums) if (a.rating == row) a]
       ..sort((a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()));
     final open = widget.onAlbumTap!;
     if (albums.length == 1) {
@@ -94,7 +95,7 @@ class _YearRatingChartState extends State<YearRatingChart> {
           children: [
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
-              child: Text('${point.year} · $nearest stars', style: Theme.of(context).textTheme.titleMedium),
+              child: Text('${point.year} · ${formatRating(row)} stars', style: Theme.of(context).textTheme.titleMedium),
             ),
             for (final a in albums)
               ListTile(
