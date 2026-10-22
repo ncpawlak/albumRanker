@@ -14,13 +14,15 @@ class GroupDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final repo = AppScope.of(context).repository;
+    final scope = AppScope.of(context);
+    final repo = scope.repository;
     final theme = Theme.of(context);
     return ListenableBuilder(
-      listenable: repo,
+      listenable: Listenable.merge([repo, scope.settings]),
       builder: (context, _) {
+        final quality = scope.settings.qualityCoefficient;
         RankedGroup? group;
-        for (final g in rankGroups(repo.albums, groupBy)) {
+        for (final g in rankGroups(repo.albums, groupBy, useQuality: quality)) {
           if (g.key == groupKey) group = g;
         }
         return Scaffold(
@@ -38,7 +40,9 @@ class GroupDetailScreen extends StatelessWidget {
                       padding: const EdgeInsets.fromLTRB(20, 4, 20, 16),
                       child: Row(
                         children: [
-                          RatingBadge(group.average, size: 56),
+                          quality
+                              ? RatingBadge(group.quality, size: 56, decimals: 1)
+                              : RatingBadge(group.average, size: 56),
                           const SizedBox(width: 16),
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -47,6 +51,7 @@ class GroupDetailScreen extends StatelessWidget {
                                   style: theme.textTheme.titleMedium),
                               const SizedBox(height: 2),
                               Text(
+                                '${quality ? 'Quality ${group.quality.toStringAsFixed(1)} · ' : ''}'
                                 'Average ${group.average}/10 · ${group.count} album${group.count == 1 ? '' : 's'}',
                                 style: theme.textTheme.bodyMedium
                                     ?.copyWith(color: theme.colorScheme.onSurfaceVariant),

@@ -4,10 +4,13 @@ import '../../models/album.dart';
 import '../../theme/rating_colors.dart';
 
 class RatingBadge extends StatelessWidget {
-  const RatingBadge(this.rating, {super.key, this.size = 32});
+  const RatingBadge(this.rating, {super.key, this.size = 32, this.decimals = 0});
 
-  final int rating;
+  final num rating;
   final double size;
+
+  /// Digits after the decimal point; quality scores use 1.
+  final int decimals;
 
   @override
   Widget build(BuildContext context) {
@@ -21,7 +24,7 @@ class RatingBadge extends StatelessWidget {
         borderRadius: BorderRadius.circular(size * 0.26),
       ),
       child: Text(
-        '$rating',
+        rating.toStringAsFixed(decimals),
         style: TextStyle(
           color: onRatingColor(rating),
           fontWeight: FontWeight.w800,

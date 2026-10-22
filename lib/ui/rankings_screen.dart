@@ -18,14 +18,17 @@ class _RankingsScreenState extends State<RankingsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final repo = AppScope.of(context).repository;
+    final scope = AppScope.of(context);
+    final repo = scope.repository;
+    final settings = scope.settings;
     final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(title: const Text('Rankings'), centerTitle: false, toolbarHeight: 64),
       body: ListenableBuilder(
-        listenable: repo,
+        listenable: Listenable.merge([repo, settings]),
         builder: (context, _) {
-          final groups = rankGroups(repo.albums, _groupBy, minAlbums: _minAlbums);
+          final quality = settings.qualityCoefficient;
+          final groups = rankGroups(repo.albums, _groupBy, minAlbums: _minAlbums, useQuality: quality);
           return Column(
             children: [
               Padding(
@@ -40,6 +43,32 @@ class _RankingsScreenState extends State<RankingsScreen> {
                     selected: {_groupBy},
                     onSelectionChanged: (s) => setState(() => _groupBy = s.first),
                   ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 4, 12, 0),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Quality coefficient', style: theme.textTheme.titleSmall),
+                          Text(
+                            quality
+                                ? 'Rewards groups with many good albums'
+                                : 'Ranking by plain average',
+                            style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Switch(
+                      key: const ValueKey('quality-toggle'),
+                      value: quality,
+                      onChanged: settings.setQualityCoefficient,
+                    ),
+                  ],
                 ),
               ),
               Padding(
@@ -83,6 +112,7 @@ class _RankingsScreenState extends State<RankingsScreen> {
                         itemCount: groups.length,
                         itemBuilder: (context, i) => _GroupRow(
                           group: groups[i],
+                          quality: quality,
                           onTap: () => Navigator.of(context).push(MaterialPageRoute(
                             builder: (_) => GroupDetailScreen(groupBy: _groupBy, groupKey: groups[i].key),
                           )),
@@ -98,9 +128,10 @@ class _RankingsScreenState extends State<RankingsScreen> {
 }
 
 class _GroupRow extends StatelessWidget {
-  const _GroupRow({required this.group, required this.onTap});
+  const _GroupRow({required this.group, required this.quality, required this.onTap});
 
   final RankedGroup group;
+  final bool quality;
   final VoidCallback onTap;
 
   @override
@@ -134,13 +165,16 @@ class _GroupRow extends StatelessWidget {
                       style: theme.textTheme.titleMedium?.copyWith(fontSize: 16)),
                   const SizedBox(height: 3),
                   Text(
-                    '${group.count} album${group.count == 1 ? '' : 's'}',
+                    '${group.count} album${group.count == 1 ? '' : 's'}'
+                    '${quality ? ' · avg ${group.average}' : ''}',
                     style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
                   ),
                 ],
               ),
             ),
-            RatingBadge(group.average, size: 38),
+            quality
+                ? RatingBadge(group.quality, size: 38, decimals: 1)
+                : RatingBadge(group.average, size: 38),
             const SizedBox(width: 4),
             Icon(Icons.chevron_right_rounded, color: theme.colorScheme.onSurfaceVariant),
           ],

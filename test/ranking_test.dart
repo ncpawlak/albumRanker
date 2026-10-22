@@ -77,4 +77,40 @@ void main() {
       expect(groups.map((g) => (g.label, g.rank)).toList(), [('Abe', 1), ('Zed', 1)]);
     });
   });
+
+  group('quality coefficient', () {
+    test('scores (sum + 10) / (count + 2) in tenths', () {
+      expect(qualityTenthsFor(8, 1), 60); // 18/3
+      expect(qualityTenthsFor(28, 4), 63); // 38/6 = 6.33
+      expect(qualityTenthsFor(10, 1), 67); // 20/3 = 6.67
+      expect(qualityTenthsFor(120, 20), 59); // twenty 6s = 5.91
+    });
+
+    List<Album> many(int year, int rating, int n) =>
+        [for (var i = 0; i < n; i++) album('$year-$i', 'A$i', year, 'Rock', rating)];
+
+    test('four 7s outrank one 8 when on, not when off', () {
+      final albums = [...many(2016, 8, 1), ...many(2017, 7, 4)];
+      final off = rankGroups(albums, GroupBy.year);
+      expect(off.map((g) => g.label), ['2016', '2017']);
+      final on = rankGroups(albums, GroupBy.year, useQuality: true);
+      expect(on.map((g) => g.label), ['2017', '2016']);
+      expect(on.first.quality, 6.3);
+      expect(on.map((g) => g.rank), [1, 2]);
+    });
+
+    test('a pile of mediocre albums does not beat a few great ones', () {
+      final albums = [...many(2001, 8, 3), ...many(2002, 6, 20)];
+      final on = rankGroups(albums, GroupBy.year, useQuality: true);
+      expect(on.first.label, '2001');
+    });
+
+    test('equal one-decimal scores share a rank, more albums first', () {
+      // three 9s (7.4) vs eight 8s (7.4)
+      final albums = [...many(2010, 9, 3), ...many(2011, 8, 8)];
+      final on = rankGroups(albums, GroupBy.year, useQuality: true);
+      expect(on.map((g) => g.label), ['2011', '2010']);
+      expect(on.map((g) => g.rank), [1, 1]);
+    });
+  });
 }
