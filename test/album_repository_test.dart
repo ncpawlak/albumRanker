@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:album_ranker/data/album_repository.dart';
+import 'package:albumrank/data/album_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 

@@ -4,7 +4,11 @@ import '../../models/album.dart';
 import '../../theme/rating_colors.dart';
 
 class RatingBadge extends StatelessWidget {
-  const RatingBadge(this.rating, {super.key, this.size = 32, this.decimals = 0});
+  const RatingBadge(this.rating, {super.key, this.size = 32, this.decimals = 0, this.colorRating});
+
+  /// Shows a group's quality score, colored on the stretched quality scale.
+  RatingBadge.quality(double quality, {Key? key, double size = 32})
+      : this(quality, key: key, size: size, decimals: 1, colorRating: qualityColorRating(quality));
 
   final num rating;
   final double size;
@@ -12,23 +16,29 @@ class RatingBadge extends StatelessWidget {
   /// Digits after the decimal point; quality scores use 1.
   final int decimals;
 
+  /// Value used for the color when it differs from the displayed [rating].
+  final num? colorRating;
+
   @override
   Widget build(BuildContext context) {
     return Container(
       constraints: BoxConstraints(minWidth: size),
       height: size * 0.8,
       padding: const EdgeInsets.symmetric(horizontal: 7),
-      alignment: Alignment.center,
       decoration: BoxDecoration(
-        color: ratingColor(rating),
+        color: ratingColor(colorRating ?? rating),
         borderRadius: BorderRadius.circular(size * 0.26),
       ),
-      child: Text(
-        rating.toStringAsFixed(decimals),
-        style: TextStyle(
-          color: onRatingColor(rating),
-          fontWeight: FontWeight.w800,
-          fontSize: size * 0.42,
+      // widthFactor keeps the badge hugging its text instead of filling loose parents.
+      child: Center(
+        widthFactor: 1,
+        child: Text(
+          rating.toStringAsFixed(decimals),
+          style: TextStyle(
+            color: onRatingColor(colorRating ?? rating),
+            fontWeight: FontWeight.w800,
+            fontSize: size * 0.42,
+          ),
         ),
       ),
     );

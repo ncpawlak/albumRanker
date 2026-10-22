@@ -129,6 +129,17 @@ List<RankedGroup> rankGroups(List<Album> albums, GroupBy by, {int minAlbums = 1,
   return result;
 }
 
+/// Every album ranked by its own rating, with ties sharing a rank (1, 2, 2, 4).
+List<({int rank, Album album})> rankAlbums(List<Album> albums) {
+  final sorted = [...albums]..sort(compareAlbumsByRating);
+  final result = <({int rank, Album album})>[];
+  for (var i = 0; i < sorted.length; i++) {
+    final tied = i > 0 && sorted[i - 1].rating == sorted[i].rating;
+    result.add((rank: tied ? result[i - 1].rank : i + 1, album: sorted[i]));
+  }
+  return result;
+}
+
 (String, String) _keyFor(Album album, GroupBy by) {
   switch (by) {
     case GroupBy.year:

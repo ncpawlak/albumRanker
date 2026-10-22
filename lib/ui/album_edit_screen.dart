@@ -98,7 +98,7 @@ class _AlbumEditScreenState extends State<AlbumEditScreen> {
       setState(() {
         _suggestions = const [];
         _searching = false;
-        _lookupError = "Couldn't reach album search. You can still enter details manually.";
+        _lookupError = "Album search is offline. Type the details in yourself.";
       });
     }
   }
@@ -285,7 +285,16 @@ class _AlbumEditScreenState extends State<AlbumEditScreen> {
             if (_lookupError != null)
               Padding(
                 padding: const EdgeInsets.only(top: 8, left: 4),
-                child: Text(_lookupError!, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.error)),
+                child: Row(
+                  children: [
+                    Icon(Icons.wifi_off_rounded, size: 16, color: theme.colorScheme.onSurfaceVariant),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(_lookupError!,
+                          style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+                    ),
+                  ],
+                ),
               ),
             if (_suggestions.isNotEmpty) _SuggestionList(suggestions: _suggestions, onSelected: _applySuggestion),
             const SizedBox(height: 18),

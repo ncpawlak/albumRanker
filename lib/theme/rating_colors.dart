@@ -16,3 +16,11 @@ double _hue(num rating) {
   final r = rating.clamp(Album.minRating, Album.maxRating);
   return (r - 1) * 220 / 9;
 }
+
+/// Quality scores cluster around 4–8 because small groups are pulled toward 5,
+/// so stretch that band across the full 1–10 color scale for visible contrast.
+double qualityColorRating(double quality) {
+  const low = 4.0, high = 8.0;
+  final t = ((quality - low) / (high - low)).clamp(0.0, 1.0);
+  return Album.minRating + t * (Album.maxRating - Album.minRating);
+}

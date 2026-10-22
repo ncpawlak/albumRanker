@@ -41,7 +41,7 @@ class GroupDetailScreen extends StatelessWidget {
                       child: Row(
                         children: [
                           quality
-                              ? RatingBadge(group.quality, size: 56, decimals: 1)
+                              ? RatingBadge.quality(group.quality, size: 56)
                               : RatingBadge(group.average, size: 56),
                           const SizedBox(width: 16),
                           Column(

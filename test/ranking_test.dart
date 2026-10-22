@@ -1,5 +1,5 @@
-import 'package:album_ranker/logic/ranking.dart';
-import 'package:album_ranker/models/album.dart';
+import 'package:albumrank/logic/ranking.dart';
+import 'package:albumrank/models/album.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 Album album(String title, String artist, int year, String genre, int rating) {
