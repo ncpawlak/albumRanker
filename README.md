@@ -1,31 +1,50 @@
 # AlbumRank
 
-Android app (Flutter) for rating albums 1–10 and ranking years, decades, genres and artists by their average rating.
+Rate the albums you've heard and see which years, decades, genres and artists you rate highest.
 
-## Features
+AlbumRank is an Android app built with Flutter. You keep a master list of albums, each rated 1–10 in half stars. The app groups them and ranks each group by its average rating. It also has head-to-head **Face-offs** for settling close calls, charts of your ratings over time, and shareable top-N image cards.
 
-- Master list of albums (title, artist, year, genre, 1–10 rating) with add / edit / delete and undo.
-- Half-star ratings set with a large score, −/+ buttons (half a star each) and a colored slider; group averages stay whole numbers.
-- Album rows show cover art; albums without art get a tile in their rating color with the artist's initials.
-- Share button on Rankings and group details makes a top 5/10/25 image card to send through any app.
-- Artist and genre names are matched case-insensitively on save; Settings › Duplicate names merges existing spellings (e.g. Babymetal / BABYMETAL).
-- Auto-fill from the iTunes Search API while typing; works offline with manual entry.
-- Rankings by Year, Decade, Genre, Artist (whole-number averages, shared ranks for ties) plus an all-albums leaderboard. Ranks 1–3 get gold, silver and bronze crowns (ties share a crown).
-- Group details sort by rating, A–Z or year (newest first); the last choice is remembered.
-- Faint background images: artist screens show a band photo (from Deezer's free artist search, looked up once and saved); year, decade and genre screens show a tilted collage of their best covers. Artist screens have a **Change image** button to pick a different Deezer result, and Settings › Appearance › **Artist backgrounds** lists every artist so you can re-search any photo that's wrong. Turn backgrounds off in Settings › Appearance.
-- **Face-off** tab: pick match-ups (tied, within ½ or any), rounds (5/10/20/∞), an artist/genre/year and ratings, then two albums fly in and collide over both bands' photos, split by a glowing 45° seam. Tap the better one (or "too close to call"), then raise the winner or lower the loser by half a star, or keep the ratings. Each album's win–loss record is shown on its edit screen, and a recap lists every match-up.
-- Decade, genre and artist details (with 2+ albums) show a ratings-by-year graph of just that group; tap a dot to open the album.
-- Optional **quality coefficient**: rewards groups with more good albums using `(sum + 5·2) / (n + 2)`.
-- Stats tab: ratings-by-year chart (a dot per album, an average line, and a dashed quality line when the coefficient is on; the line bridges empty years; scrolls sideways or fits to screen; tap a year to open it), rating spread, and most-rated artists, years and genres.
-- Ratings color-coded red (1) → blue (10).
-- JSON export/import, plus a weekly automatic backup to `Downloads/AlbumRank` on Android (keeps the newest 5).
+## Highlights
 
-## Develop
+| | |
+|---|---|
+| **Master list** | Add, edit and delete albums (title, artist, year, genre, rating) with undo. Type a title and AlbumRank fills in the artist, year, genre and cover from iTunes. |
+| **Half-star ratings** | 1–10 in half steps, color-coded from red (1) to blue (10). |
+| **Rankings** | Year, Decade, Genre and Artist rankings by whole-number average, with ties sharing a rank. Gold, silver and bronze crowns for the top 3. Optional **quality coefficient** rewards groups with many good albums. |
+| **Group details** | Every album in a group, sortable by rating, A–Z or year, with a ratings-by-year chart. A faint band photo or cover collage sits behind the screen. |
+| **Face-off** | Two albums fly in and collide over a diagonal split of both bands' photos. Pick the better one, then optionally nudge the ratings by half a star. |
+| **Stats** | Ratings-by-year chart (scrolling or fit-to-screen), rating spread, and most-rated artists, years and genres. |
+| **Sharing** | Top 5, 10 or 25 of any ranking as an image to send through any app. |
+| **Backups** | JSON export and import, plus an automatic weekly backup to `Downloads/AlbumRank`. |
 
-```
+## Documentation
+
+- [User guide](docs/user-guide.md): every screen and how to use it.
+- [How ranking works](docs/ranking.md): averages, ties, the quality coefficient and Face-off pairing.
+- [Architecture](docs/architecture.md): code layout, state management and external services.
+- [Data and backups](docs/data-and-backups.md): storage, the backup file format and schema migrations.
+- [Development](docs/development.md): setup, testing, building, signing and installing on a phone.
+
+## Quick start
+
+```powershell
+flutter pub get
 flutter test
-flutter run
-flutter build apk --release   # needs android/key.properties for release signing
+flutter run                     # on a connected phone or emulator
+flutter build apk --release     # signed if android/key.properties exists
 ```
 
-App icon sources live in `assets/icon/`; regenerate platform icons with `dart run flutter_launcher_icons`.
+See [Development](docs/development.md) for details.
+
+## Requirements
+
+- Android 7.0 (API 24) or newer.
+- Internet access only for auto-fill, cover art and band photos. Everything else works offline, and your albums never leave the phone unless you export them.
+
+## Credits
+
+Album info and cover art from the [iTunes Search API](https://performance-partners.apple.com/search-api). Artist photos from the [Deezer API](https://developers.deezer.com/api).
+
+## Roadmap
+
+Publishing on Google Play is tracked in [#10](https://github.com/ncpawlak/albumRanker/issues/10).
