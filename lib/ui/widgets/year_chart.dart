@@ -4,6 +4,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 
 import '../../logic/year_chart.dart';
+import '../../models/album.dart';
 import '../../theme/rating_colors.dart';
 
 /// Ratings-by-year chart: a dot per album (stacked dots grow and show a count),
@@ -17,12 +18,17 @@ class YearRatingChart extends StatefulWidget {
     required this.condensed,
     required this.showQuality,
     this.onYearTap,
+    this.onAlbumTap,
   });
 
   final List<YearPoint> years;
   final bool condensed;
   final bool showQuality;
   final ValueChanged<int>? onYearTap;
+
+  /// When set, tapping a dot opens its album (a picker if several share it)
+  /// instead of calling [onYearTap].
+  final ValueChanged<Album>? onAlbumTap;
 
   static const scrollSlotWidth = 44.0;
   static const chartHeight = 230.0;
@@ -59,6 +65,51 @@ class _YearRatingChartState extends State<YearRatingChart> {
     super.dispose();
   }
 
+  /// Opens the album whose dot row is nearest the tap; several albums sharing
+  /// that dot get a picker sheet.
+  Future<void> _openAlbumAt(YearPoint point, double dy) async {
+    int? nearest;
+    var best = double.infinity;
+    for (final r in point.stacks.keys) {
+      final dist = (dy - _Geometry.y(r)).abs();
+      if (dist < best) {
+        best = dist;
+        nearest = r;
+      }
+    }
+    if (nearest == null || best > _Geometry.step * 0.75) return;
+    final albums = [for (final a in point.albums) if (a.rating == nearest) a]
+      ..sort((a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()));
+    final open = widget.onAlbumTap!;
+    if (albums.length == 1) {
+      open(albums.single);
+      return;
+    }
+    final picked = await showModalBottomSheet<Album>(
+      context: context,
+      showDragHandle: true,
+      builder: (context) => SafeArea(
+        child: ListView(
+          shrinkWrap: true,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+              child: Text('${point.year} · $nearest stars', style: Theme.of(context).textTheme.titleMedium),
+            ),
+            for (final a in albums)
+              ListTile(
+                title: Text(a.title),
+                subtitle: Text(a.artist),
+                trailing: const Icon(Icons.chevron_right_rounded),
+                onTap: () => Navigator.of(context).pop(a),
+              ),
+          ],
+        ),
+      ),
+    );
+    if (picked != null) open(picked);
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -86,7 +137,11 @@ class _YearRatingChartState extends State<YearRatingChart> {
               onTapUp: (d) {
                 final i = (d.localPosition.dx / slot).floor();
                 if (i < 0 || i >= n || widget.years[i].isEmpty) return;
-                widget.onYearTap?.call(widget.years[i].year);
+                if (widget.onAlbumTap != null) {
+                  _openAlbumAt(widget.years[i], d.localPosition.dy);
+                } else {
+                  widget.onYearTap?.call(widget.years[i].year);
+                }
               },
               child: CustomPaint(size: Size(slot * n, height), painter: painter),
             );
@@ -266,7 +321,7 @@ class _ChartPainter extends CustomPainter {
     final labelY = _Geometry.bottom + 6 + _Geometry.labelBand / 2;
     final width = slot * years.length;
     final indexes = condensed
-        ? condensedLabelIndexes([for (final y in years) y.year], 34 / slot)
+        ? condensedLabelIndexes([for (final y in years) y.year], 42 / slot)
         : List.generate(years.length, (i) => i);
     for (final i in indexes) {
       // Keep the first and last labels inside the chart edges.

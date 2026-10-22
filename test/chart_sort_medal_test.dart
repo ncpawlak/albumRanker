@@ -138,6 +138,44 @@ void main() {
       expect(ordered(['Amnesiac', 'Kid A', 'OK Computer']), isTrue);
     });
 
+    testWidgets('artist detail has a chart; tapping a dot opens the album', (tester) async {
+      await pumpApp(tester);
+      await tester.tap(find.text('Rankings'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Radiohead'));
+      await tester.pumpAndSettle();
+      final chart = find.byKey(const ValueKey('year-chart'));
+      expect(chart, findsOneWidget);
+      // Radiohead spans 1997–2001; fit it and tap the 1997 slot at rating 10.
+      await tester.tap(find.byKey(const ValueKey('chart-fit')));
+      await tester.pumpAndSettle();
+      final box = tester.getRect(chart);
+      final slot = box.width / 5;
+      final y10 = box.top + 12; // top grid line is rating 10
+      await tester.tapAt(Offset(box.left + slot / 2, y10));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('save-album')), findsOneWidget);
+      expect(find.widgetWithText(TextField, 'OK Computer'), findsOneWidget);
+    });
+
+    testWidgets('single-album and year groups have no chart', (tester) async {
+      await pumpApp(tester);
+      await tester.tap(find.text('Rankings'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Frank Ocean'));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('year-chart')), findsNothing);
+      await tester.pageBack();
+      await tester.pumpAndSettle();
+      await tester.tap(find.descendant(
+          of: find.byWidgetPredicate((w) => w is SegmentedButton), matching: find.text('Year')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('1997'));
+      await tester.pumpAndSettle();
+      expect(find.text('Rank #1 by year'), findsOneWidget);
+      expect(find.byKey(const ValueKey('year-chart')), findsNothing);
+    });
+
     testWidgets('stats chart toggles fit and opens a year on tap', (tester) async {
       await pumpApp(tester);
       await tester.tap(find.text('Stats'));

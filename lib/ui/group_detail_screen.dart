@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 
 import '../app_scope.dart';
 import '../logic/ranking.dart';
+import '../logic/year_chart.dart';
 import 'album_edit_screen.dart';
 import 'widgets/album_tile.dart';
 import 'widgets/rating_widgets.dart';
+import 'widgets/year_chart_card.dart';
 
 class GroupDetailScreen extends StatelessWidget {
   const GroupDetailScreen({super.key, required this.groupBy, required this.groupKey});
@@ -67,6 +69,17 @@ class GroupDetailScreen extends StatelessWidget {
                       ),
                     ),
                     Divider(color: theme.colorScheme.outlineVariant),
+                    if (groupBy != GroupBy.year && group.count > 1)
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+                        child: YearChartCard(
+                          years: yearTimeline(group.albums),
+                          settings: scope.settings,
+                          onAlbumTap: (album) => Navigator.of(context).push(
+                            MaterialPageRoute(builder: (_) => AlbumEditScreen(album: album)),
+                          ),
+                        ),
+                      ),
                     _SortBar(
                       options: [
                         for (final s in AlbumSort.values)
