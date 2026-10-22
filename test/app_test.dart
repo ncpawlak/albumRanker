@@ -1,7 +1,7 @@
-import 'package:album_ranker/data/album_repository.dart';
-import 'package:album_ranker/data/settings_controller.dart';
-import 'package:album_ranker/main.dart';
-import 'package:album_ranker/services/album_lookup_service.dart';
+import 'package:albumrank/data/album_repository.dart';
+import 'package:albumrank/data/settings_controller.dart';
+import 'package:albumrank/main.dart';
+import 'package:albumrank/services/album_lookup_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;

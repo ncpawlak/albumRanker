@@ -35,7 +35,7 @@ class AlbumLookupService {
       'entity': 'album',
       'limit': '$limit',
     });
-    final response = await _client.get(uri).timeout(const Duration(seconds: 8));
+    final response = await _client.get(uri).timeout(const Duration(seconds: 5));
     if (response.statusCode != 200) {
       throw http.ClientException('Lookup failed (${response.statusCode})', uri);
     }

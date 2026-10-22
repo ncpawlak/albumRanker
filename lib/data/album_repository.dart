@@ -21,7 +21,10 @@ class AlbumRepository extends ChangeNotifier {
   }
 
   static const int schemaVersion = 1;
-  static const String storageKey = 'album_ranker.library';
+  static const String storageKey = 'albumrank.library';
+
+  /// Tags backups so files from sibling *Rank apps aren't imported by mistake.
+  static const String appId = 'AlbumRank';
 
   final SharedPreferences _prefs;
   final List<Album> _albums = [];
@@ -139,12 +142,16 @@ class AlbumRepository extends ChangeNotifier {
 
   List<Album> _parse(Object? decoded) {
     if (decoded is! Map<String, dynamic>) {
-      throw const FormatException('Not an Album Ranker backup');
+      throw const FormatException('Not an AlbumRank backup');
     }
     final version = (decoded['schemaVersion'] as num?)?.toInt();
     final list = decoded['albums'];
+    final app = decoded['app'];
+    if (app != null && app != appId) {
+      throw FormatException('This is a $app backup, not an $appId backup');
+    }
     if (version == null || list is! List) {
-      throw const FormatException('Not an Album Ranker backup');
+      throw const FormatException('Not an AlbumRank backup');
     }
     if (version > schemaVersion) {
       throw FormatException('Backup is from a newer app version ($version)');
@@ -166,6 +173,7 @@ class AlbumRepository extends ChangeNotifier {
   }
 
   Map<String, dynamic> _envelope() => {
+        'app': appId,
         'schemaVersion': schemaVersion,
         'exportedAt': DateTime.now().toIso8601String(),
         'albums': _albums.map((a) => a.toJson()).toList(),

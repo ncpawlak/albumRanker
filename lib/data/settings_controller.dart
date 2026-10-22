@@ -6,8 +6,8 @@ class SettingsController extends ChangeNotifier {
       : _themeMode = _prefs.getString(_themeKey) == 'light' ? ThemeMode.light : ThemeMode.dark,
         _qualityCoefficient = _prefs.getBool(_qualityKey) ?? false;
 
-  static const _themeKey = 'album_ranker.theme';
-  static const _qualityKey = 'album_ranker.qualityCoefficient';
+  static const _themeKey = 'albumrank.theme';
+  static const _qualityKey = 'albumrank.qualityCoefficient';
 
   final SharedPreferences _prefs;
   ThemeMode _themeMode;

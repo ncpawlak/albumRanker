@@ -4,6 +4,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 
 import '../app_scope.dart';
+import '../services/auto_backup_service.dart';
 import '../theme/rating_colors.dart';
 
 class SettingsScreen extends StatelessWidget {
@@ -17,7 +18,7 @@ class SettingsScreen extends StatelessWidget {
     try {
       final saved = await FilePicker.saveFile(
         dialogTitle: 'Save backup',
-        fileName: 'album-ranker-backup-$stamp.json',
+        fileName: 'AlbumRank-backup-$stamp.json',
         bytes: utf8.encode(repo.exportJson()),
         mimeType: 'application/json',
         type: FileType.custom,
@@ -115,6 +116,10 @@ class SettingsScreen extends StatelessWidget {
                 subtitle: const Text('Replace albums from a .json file'),
                 onTap: () => _import(context),
               ),
+              if (scope.backup case final backup? when backup.supported) ...[
+                const Divider(indent: 16, endIndent: 16),
+                _AutoBackupTile(backup: backup),
+              ],
             ],
           ),
           const SizedBox(height: 20),
@@ -144,11 +149,47 @@ class SettingsScreen extends StatelessWidget {
           const SizedBox(height: 20),
           Center(
             child: Text(
-              'Album Ranker · album search by iTunes',
+              'AlbumRank · album search by iTunes',
               style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _AutoBackupTile extends StatelessWidget {
+  const _AutoBackupTile({required this.backup});
+
+  final AutoBackupService backup;
+
+  static String _describe(DateTime? last) {
+    if (last == null) return 'No backup yet';
+    final days = DateTime.now().difference(last).inDays;
+    final when = switch (days) { 0 => 'today', 1 => 'yesterday', _ => '$days days ago' };
+    return 'Last backup $when';
+  }
+
+  Future<void> _backupNow(BuildContext context) async {
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      final path = await backup.backupNow();
+      messenger.showSnackBar(SnackBar(content: Text('Saved to $path')));
+    } catch (e) {
+      messenger.showSnackBar(SnackBar(content: Text('Backup failed: $e')));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ListenableBuilder(
+      listenable: backup,
+      builder: (context, _) => ListTile(
+        leading: const Icon(Icons.history_rounded),
+        title: const Text('Weekly auto-backup'),
+        subtitle: Text('${_describe(backup.lastBackup)} · Downloads/AlbumRank, keeps ${AutoBackupService.keep}'),
+        trailing: TextButton(onPressed: () => _backupNow(context), child: const Text('Back up now')),
       ),
     );
   }
