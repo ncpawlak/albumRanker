@@ -51,7 +51,7 @@ void main() {
 
     await tester.tap(find.text('Rankings'));
     await tester.pumpAndSettle();
-    expect(find.text('#1'), findsOneWidget);
+    expect(find.byKey(const ValueKey('crown-1')), findsOneWidget);
     expect(find.text('Radiohead'), findsOneWidget);
     expect(find.text('2 albums'), findsOneWidget);
   });

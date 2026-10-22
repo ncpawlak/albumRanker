@@ -5,6 +5,7 @@ import '../logic/ranking.dart';
 import 'album_edit_screen.dart';
 import 'group_detail_screen.dart';
 import 'widgets/album_tile.dart';
+import 'widgets/rank_medal.dart';
 import 'widgets/rating_widgets.dart';
 
 class RankingsScreen extends StatefulWidget {
@@ -157,7 +158,6 @@ class _AlbumLeaderboard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final ranked = rankAlbums(AppScope.of(context).repository.albums);
     if (ranked.isEmpty) return const _EmptyMessage('Add some albums to see rankings.');
     return ListView.builder(
@@ -173,18 +173,7 @@ class _AlbumLeaderboard extends StatelessWidget {
         final r = ranked[i - 1];
         return AlbumTile(
           album: r.album,
-          leading: SizedBox(
-            width: 36,
-            child: Center(
-              child: Text(
-                '#${r.rank}',
-                style: theme.textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w800,
-                  color: r.rank <= 3 ? theme.colorScheme.primary : theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ),
-          ),
+          leading: RankMedal(r.rank, width: 36),
           onTap: () => Navigator.of(context).push(
             MaterialPageRoute(builder: (_) => AlbumEditScreen(album: r.album)),
           ),
@@ -218,7 +207,6 @@ class _GroupRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final top3 = group.rank <= 3;
     return InkWell(
       onTap: onTap,
       child: Container(
@@ -226,16 +214,8 @@ class _GroupRow extends StatelessWidget {
         decoration: BoxDecoration(border: Border(bottom: BorderSide(color: theme.colorScheme.outlineVariant))),
         child: Row(
           children: [
-            SizedBox(
-              width: 40,
-              child: Text(
-                '#${group.rank}',
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w800,
-                  color: top3 ? theme.colorScheme.primary : theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ),
+            RankMedal(group.rank),
+            const SizedBox(width: 8),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,

@@ -21,6 +21,9 @@ class GroupDetailScreen extends StatelessWidget {
       listenable: Listenable.merge([repo, scope.settings]),
       builder: (context, _) {
         final quality = scope.settings.qualityCoefficient;
+        // Sorting a single year by year does nothing, so fall back to rating.
+        final saved = scope.settings.groupSort;
+        final sort = groupBy == GroupBy.year && saved == AlbumSort.year ? AlbumSort.rating : saved;
         RankedGroup? group;
         for (final g in rankGroups(repo.albums, groupBy, useQuality: quality)) {
           if (g.key == groupKey) group = g;
@@ -44,25 +47,35 @@ class GroupDetailScreen extends StatelessWidget {
                               ? RatingBadge.quality(group.quality, size: 56)
                               : RatingBadge(group.average, size: 56),
                           const SizedBox(width: 16),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text('Rank #${group.rank} by ${groupBy.label.toLowerCase()}',
-                                  style: theme.textTheme.titleMedium),
-                              const SizedBox(height: 2),
-                              Text(
-                                '${quality ? 'Quality ${group.quality.toStringAsFixed(1)} · ' : ''}'
-                                'Average ${group.average}/10 · ${group.count} album${group.count == 1 ? '' : 's'}',
-                                style: theme.textTheme.bodyMedium
-                                    ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-                              ),
-                            ],
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('Rank #${group.rank} by ${groupBy.label.toLowerCase()}',
+                                    style: theme.textTheme.titleMedium),
+                                const SizedBox(height: 2),
+                                Text(
+                                  '${quality ? 'Quality ${group.quality.toStringAsFixed(1)} · ' : ''}'
+                                  'Average ${group.average}/10 · ${group.count} album${group.count == 1 ? '' : 's'}',
+                                  style: theme.textTheme.bodyMedium
+                                      ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                                ),
+                              ],
+                            ),
                           ),
                         ],
                       ),
                     ),
                     Divider(color: theme.colorScheme.outlineVariant),
-                    for (final album in group.albums)
+                    _SortBar(
+                      options: [
+                        for (final s in AlbumSort.values)
+                          if (!(groupBy == GroupBy.year && s == AlbumSort.year)) s
+                      ],
+                      selected: sort,
+                      onChanged: scope.settings.setGroupSort,
+                    ),
+                    for (final album in sortAlbums(group.albums, sort))
                       AlbumTile(
                         album: album,
                         onTap: () => Navigator.of(context).push(
@@ -73,6 +86,39 @@ class GroupDetailScreen extends StatelessWidget {
                 ),
         );
       },
+    );
+  }
+}
+
+class _SortBar extends StatelessWidget {
+  const _SortBar({required this.options, required this.selected, required this.onChanged});
+
+  final List<AlbumSort> options;
+  final AlbumSort selected;
+  final ValueChanged<AlbumSort> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 4, 16, 8),
+      child: Row(
+        children: [
+          Text('Sort by',
+              style: theme.textTheme.labelMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+          const SizedBox(width: 12),
+          Expanded(
+            child: SegmentedButton<AlbumSort>(
+              key: const ValueKey('group-sort'),
+              showSelectedIcon: false,
+              style: const ButtonStyle(visualDensity: VisualDensity.compact),
+              segments: [for (final s in options) ButtonSegment(value: s, label: Text(s.label))],
+              selected: {selected},
+              onSelectionChanged: (s) => onChanged(s.first),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
